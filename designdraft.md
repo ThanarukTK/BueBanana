@@ -23,13 +23,13 @@
 ## 4. Diagrams
 
 ### 4.1 Use Case Diagram
-image/useCaseDiagram.png
+![Use Case Diagram](.image/useCaseDiagram.png)
 
 ### 4.2 Activity Diagram
-image/Activity-Diagram.png
+![Activity Diagram](.image/Activity-Diagram.png)
 
 ### 4.3 Sequence Diagram
-image/Sequence-Diagram.png
+![Sequence Diagram](.image/Sequence-Diagram.png)
 
 ### 4.4 Class Diagram
-image/Class-Diagram.png
+![Class Diagram](.image/Class-Diagram.png)
