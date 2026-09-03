@@ -22,14 +22,14 @@
 
 ## 4. Diagrams
 
-### 4.1 Diagram 1
-[Insert diagram]
+### 4.1 Use Case Diagram
+image/useCaseDiagram.png
 
-### 4.2 Diagram 2
-[Insert diagram]
+### 4.2 Activity Diagram
+image/Activity-Diagram.png
 
-### 4.3 Diagram 3
-[Insert diagram]
+### 4.3 Sequence Diagram
+image/Sequence-Diagram.png
 
-### 4.4 Diagram 4
-[Insert diagram]
+### 4.4 Class Diagram
+image/Class-Diagram.png

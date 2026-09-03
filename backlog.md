@@ -36,9 +36,6 @@
 
 ### Medium Priority
 - Improve system usability
-- Café information display
-- 3D-printed product display
-- Product detail view
 
 ### Low Priority
 - Product availability / promotion support
