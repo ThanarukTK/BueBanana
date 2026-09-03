@@ -18,7 +18,7 @@
 
 ## 3. Prototype
 
-[[Insert prototype image or link here](https://nfc-boardgame-checkin-demo.netlify.app/?fbclid=IwY2xjawUGCo1wZG9mBWV4dG4DYWVtAjEwAGJyaWQRMU9JbXFLWUxEbDV4MTNPRHhzcnRjBmFwcF9pZBAyMjIwMzkxNzg4MjAwODkyAAEeNbLfcFvwOo2do7Y8ZKLrcExei3-XCwiltjQm9_psq-KJT9H-AY3W85_QBK0_aem_e89gmUppKcviwS1fkkfMcw)]
+[[prototype NFC Check-in Check-out](https://nfc-boardgame-checkin-demo.netlify.app/?fbclid=IwY2xjawUGCo1wZG9mBWV4dG4DYWVtAjEwAGJyaWQRMU9JbXFLWUxEbDV4MTNPRHhzcnRjBmFwcF9pZBAyMjIwMzkxNzg4MjAwODkyAAEeNbLfcFvwOo2do7Y8ZKLrcExei3-XCwiltjQm9_psq-KJT9H-AY3W85_QBK0_aem_e89gmUppKcviwS1fkkfMcw)]
 
 ## 4. Diagrams
 
