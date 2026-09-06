@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#2b2440" />
+  <title>NFC Pay-per-play</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <span class="logo">�</span>
+      <div>
+        <h1>NFC Pay-per-play</h1>
+        <p class="subtitle">Tap your card to start &amp; stop the timer · ฿30/hour</p>
+      </div>
+    </div>
+    <div class="status">
+      <span id="nfc-badge" class="badge badge-warn">checking…</span>
+      <span id="mode-badge" class="badge">🎮 Play · ฿30/h</span>
+    </div>
+  </header>
+
+  <main>
+    <!-- Mode switch -->
+    <section class="controls">
+      <button id="btn-play-mode" class="btn btn-primary">🎮 Play (timer)</button>
+      <button id="btn-scan" class="btn btn-secondary">📲 Tap card</button>
+      <button id="btn-write-mode" class="btn btn-secondary">💾 Register Cards</button>
+      <button id="btn-reset" class="btn btn-ghost">↺ Reset demo</button>
+    </section>
+
+    <!-- Write panel -->
+    <section id="write-panel" class="panel hidden">
+      <h2>💾 Register an NFC card</h2>
+      <p class="hint">
+        Label is optional — leave <strong>UUID</strong> blank to auto-generate one.
+        Then tap the card against the back of your phone to write it.
+      </p>
+      <div class="row">
+        <input id="card-label" type="text" placeholder="Label (e.g. Alice's card)" autocomplete="off" />
+        <input id="card-uuid" type="text" placeholder="UUID (blank = auto)" autocomplete="off" />
+        <button id="btn-write" class="btn btn-primary">📲 Tap to write</button>
+      </div>
+      <p id="write-hint" class="hint"></p>
+      <p class="hint pause-note">⏸️ Check-in/out reading is paused while registering.</p>
+      <div id="write-success" class="write-success hidden">
+        <span class="ws-icon">✅</span>
+        <div class="ws-body">
+          <div class="ws-title">Card registered!</div>
+          <div class="ws-meta">UUID <span class="uuid" id="ws-uuid"></span><span id="ws-label"></span></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Last bill -->
+    <section id="bill-banner" class="panel bill hidden">
+      <h2>🧾 Last session</h2>
+      <p id="bill-text" class="bill-text"></p>
+    </section>
+
+    <!-- Now playing -->
+    <section class="panel now-playing">
+      <div class="section-head">
+        <h2>⏱️ Now playing</h2>
+        <span id="playing-count" class="counts"></span>
+      </div>
+      <p id="tap-hint" class="hint">
+        👆 Tap “📲 Tap card”, then tap your card to start your timer. Tap again to stop and pay.
+      </p>
+      <div id="now-playing" class="now-list"></div>
+    </section>
+
+    <!-- Users & bills -->
+    <section class="panel users">
+      <div class="section-head">
+        <h2>👥 Users &amp; Bills</h2>
+        <span class="counts">฿30/hour</span>
+      </div>
+      <p class="hint">Tap a user row to see their session history.</p>
+      <div id="users-list" class="users-list"></div>
+    </section>
+
+    <!-- Activity log -->
+    <section class="log">
+      <h2>Activity log</h2>
+      <ul id="log" class="log-list"></ul>
+    </section>
+  </main>
+
+  <footer class="footer">
+    Web NFC demo · works in <strong>Chrome on Android</strong> (HTTPS required) · no backend
+  </footer>
+
+  <script src="app.js?v=2"></script>
+</body>
+</html>
