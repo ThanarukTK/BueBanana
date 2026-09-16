@@ -91,8 +91,12 @@ Tap **↺ Reset demo** to wipe `localStorage` and start fresh.
 
 ```
 NFC_boardgame_reader/
-├── index.html   # the page (games grid, modes, log)
-├── style.css    # mobile-first styling
-├── app.js       # Web NFC read/write + check-in/out logic
-└── README.md    # this file
+├── AGENTS.md      # primary shared context for AI assistants
+├── docs/          # documentation set: rule.md, proposal.md, backlog.md,
+│                  # designdraft.md (features, journey, diagrams), structure.md
+└── Demo/          # this demo
+    ├── index.html # the page (games grid, modes, log)
+    ├── style.css  # mobile-first styling
+    ├── app.js     # Web NFC read/write + check-in/out logic
+    └── README.md  # this file
 ```
