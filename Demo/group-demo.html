@@ -7,7 +7,7 @@
   <style>
     :root{--bg:#10131f;--panel:#1b2031;--panel2:#252c42;--line:#ffffff18;--text:#f6f7ff;--muted:#aeb6d0;--purple:#8065ff;--green:#39d39a;--yellow:#ffd166;--red:#ff7081}
     *{box-sizing:border-box}body{margin:0;background:radial-gradient(850px 450px at 50% -8%,#30365c,var(--bg) 65%);color:var(--text);font:15px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif}button,select{font:inherit}button{border:0;cursor:pointer;color:var(--text)}
-    header{padding:28px 18px 22px;border-bottom:1px solid var(--line);background:#0b0e18aa}header>div,main{max-width:900px;margin:auto}.eyebrow{color:var(--green);font-size:.74rem;font-weight:800;letter-spacing:.13em;text-transform:uppercase}h1{margin:4px 0;font-size:clamp(1.7rem,4vw,2.4rem)}h2{margin:0 0 4px;font-size:1.1rem}.hint{color:var(--muted)}
+    header{padding:28px 18px 22px;border-bottom:1px solid var(--line);background:#0b0e18aa}header>div,main{max-width:900px;margin:auto}.header-row{display:flex;justify-content:space-between;align-items:flex-start;gap:14px}.eyebrow{color:var(--green);font-size:.74rem;font-weight:800;letter-spacing:.13em;text-transform:uppercase}h1{margin:4px 0;font-size:clamp(1.7rem,4vw,2.4rem)}h2{margin:0 0 4px;font-size:1.1rem}.hint{color:var(--muted)}
     main{padding:22px 18px 60px}.panel{padding:18px;margin-bottom:18px;border:1px solid var(--line);border-radius:16px;background:#1b2031ee;box-shadow:0 14px 35px #0003}.panel-head{display:flex;justify-content:space-between;gap:12px;align-items:flex-start;margin-bottom:15px}.badge{padding:4px 9px;border-radius:999px;background:#39d39a20;color:var(--green);font-size:.75rem;font-weight:800;white-space:nowrap}.badge.yellow{background:#ffd16620;color:var(--yellow)}.badge.red{background:#ff708120;color:var(--red)}
     .reader{display:grid;grid-template-columns:170px 1fr;gap:16px;align-items:center;padding:16px;border:1px solid #8065ff88;border-radius:14px;background:#8065ff12}.reader-screen{min-height:130px;display:grid;place-items:center;padding:14px;border-radius:12px;background:#0b0e18;color:var(--green);text-align:center;font-weight:800}.reader-screen small{display:block;margin-top:6px;color:var(--muted);font-weight:500}.reader-copy strong{font-size:1.15rem}.reader-copy p{margin:7px 0;color:var(--muted)}
     .controls{display:flex;flex-wrap:wrap;gap:9px;margin-top:16px}.btn{padding:10px 13px;border-radius:10px;background:var(--panel2);font-weight:750}.btn.primary{background:var(--purple)}.btn.green{background:#187c5c}.btn.red{background:#8f3044}.btn:disabled{opacity:.4;cursor:not-allowed}.select-row label{display:block;max-width:300px;color:var(--muted);font-size:.85rem}.select-row select{width:100%;margin-top:5px;padding:10px 11px;border:1px solid var(--line);border-radius:10px;background:var(--panel2);color:var(--text)}
@@ -18,7 +18,7 @@
   </style>
 </head>
 <body>
-  <header><div><div class="eyebrow">One shared reader · NFC group flow</div><h1>Group Session Demo</h1><div class="hint">จำลองการทำงานของ reader, backend state และ staff view ตาม flow จริง</div></div></header>
+  <header><div class="header-row"><div><div class="eyebrow">One shared reader · NFC group flow</div><h1>Group Session Demo</h1><div class="hint">จำลองการทำงานของ reader, backend state และ staff view ตาม flow จริง</div></div><span id="connBadge" class="badge yellow" title="connecting">CONNECTING</span></div></header>
   <main>
     <section class="panel">
       <div class="panel-head"><div><h2>Reader simulator</h2><div class="hint">ทุกการเปลี่ยนสถานะต้องเริ่มจากการสแกนบัตร</div></div><span id="readerBadge" class="badge">IDLE</span></div>
@@ -35,30 +35,262 @@
     <section class="panel"><div class="panel-head"><div><h2>Activity log</h2><div class="hint">Server-side events represented in the demo</div></div></div><ul id="log" class="log"></ul></section>
   </main>
   <div id="toast" class="toast"></div>
-  <script>
-    'use strict';
-    const RATE = 30;
-    let groups = [], openGroupId = null, openUntil = 0, scanContext = null, billed = 0;
+  <script type="module">
+    // All state lives behind NFCSync (see sync.js), which talks to the ElysiaJS backend (`backend/`)
+    // over REST + WebSocket by default. Nothing here mutates state directly — it dispatches commands
+    // that mirror the endpoints in docs/api-contract.md §3.1 / §3.2 / §4.1.
+    import {
+      NFCSync, baht, amountFor, screenOf, staffScanOf, activeGroups, rosterOf,
+      openGroupIdOf, totalBilledSatang, minutesBetween, clock, clockSeconds,
+    } from './sync.js';
+
     const $ = id => document.getElementById(id);
-    const activeGroup = id => groups.find(g => g.id === id && g.status === 'active');
-    const groupForCard = card => groups.find(g => g.status === 'active' && g.members.some(m => m.card === card));
-    const openGroup = () => Date.now() < openUntil ? activeGroup(openGroupId) : null;
-    const duration = t => Math.max(1, Math.floor((Date.now() - t) / 60000)) + ' min';
-    const price = (start, count = 1) => Math.max(30, Math.round(((Date.now() - start) / 3600000) * RATE * count));
-    const money = n => '฿' + n.toFixed(2);
-    function notify(text){const x=$('toast');x.textContent=text;x.classList.add('show');setTimeout(()=>x.classList.remove('show'),2200)}
-    function log(text){const li=document.createElement('li');li.innerHTML='<time>'+new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'})+'</time>'+text;$('log').prepend(li)}
-    function setFlow(n){[1,2,3,4].forEach(i=>$('f'+i).classList.toggle('on',i===n))}
-    function render(){const active=groups.filter(g=>g.status==='active');$('groupCount').textContent=active.length+(active.length===1?' group':' groups');$('people').textContent=active.reduce((n,g)=>n+g.members.length,0);const og=openGroup();$('openGroup').textContent=og?og.id:'—';$('windowText').textContent=og?'Join window: '+og.id+' · '+Math.max(0,Math.ceil((openUntil-Date.now())/1000))+'s':'No open group';$('billed').textContent='฿'+billed.toFixed(0);$('groups').innerHTML=active.length?active.map(groupHtml).join(''):'<div class="empty">ยังไม่มีกลุ่ม active<br>Scan a new card to create one</div>'}
-    function groupHtml(g){return '<article class="group"><div class="group-top"><div><strong>'+g.id+' · '+g.members.length+' players</strong><div class="group-meta">Started '+new Date(g.started).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'})+'</div></div><span class="badge">ACTIVE</span></div><div class="members">'+g.members.map(m=>'<div class="member"><span class="avatar">'+m.name+'</span><div><strong>Player '+m.name+'</strong><small>'+duration(m.started)+(scanContext&&scanContext.memberId===m.id?' · 🔎 scanning':'')+'</small></div></div>').join('')+'</div></article>'}
-    function setReader(screen,title,text,kind='badge'){$('screen').innerHTML=screen+'<small>'+title+'</small>';$('readerTitle').textContent=title;$('readerText').textContent=text;$('readerBadge').textContent=screen;$('readerBadge').className='badge '+(kind==='yellow'?'yellow':kind==='red'?'red':'')}
-    function showStaffScan(group,member){scanContext={groupId:group.id,memberId:member.id};$('staff').innerHTML='<strong>🔎 Player '+member.name+' is scanning</strong><div class="hint">'+group.id+' · roster shown · choose checkout after payment confirmation</div><div class="staff-actions"><button id="one" class="btn red">✅ Check out Player '+member.name+'</button><button id="all" class="btn green">✅ Check out whole group</button></div>';$('one').onclick=()=>checkoutOne(group.id,member.id);$('all').onclick=()=>checkoutAll(group.id)}
-    function scan(){const card=$('card').value,existing=groupForCard(card);if(existing){openGroupId=existing.id;openUntil=Date.now()+30000;const member=existing.members.find(m=>m.card===card);setReader('GROUP','Group '+existing.id+' roster','Join window opened for 30 seconds. Staff can now process checkout.');setFlow(4);showStaffScan(existing,member);log('Player '+card+' scanned · roster opened for '+existing.id);notify('Group screen opened');render();return}const join=openGroup(),member={id:card+'-'+Date.now(),card,name:card,started:Date.now()};if(join){join.members.push(member);openUntil=Date.now()+30000;setReader('JOINED','Player '+card+' joined','Added to '+join.id+' through the open join window.');setFlow(3);$('staff').innerHTML='<strong>✅ Player '+card+' joined '+join.id+'</strong><div class="hint">New member added by scanned card. Group remains active.</div>';log('Player '+card+' joined '+join.id);notify('Joined '+join.id)}else{const g={id:'GROUP-'+String(groups.length+1).padStart(2,'0'),status:'active',started:Date.now(),members:[member]};groups.push(g);openGroupId=g.id;openUntil=Date.now()+30000;setReader('WAITING','Waiting for friends','New group '+g.id+' created. Friends can scan within 30 seconds.');setFlow(2);$('staff').innerHTML='<strong>🆕 '+g.id+' created by Player '+card+'</strong><div class="hint">Waiting for friends to scan.</div>';log('Player '+card+' started '+g.id);notify('New group created')}scanContext=null;render()}
-    function checkoutOne(groupId,memberId){const g=activeGroup(groupId),m=g&&g.members.find(x=>x.id===memberId);if(!g||!m)return;const amount=price(m.started);g.members=g.members.filter(x=>x.id!==memberId);billed+=amount;openGroupId=null;openUntil=0;scanContext=null;if(!g.members.length)g.status='closed';setReader('SUCCESS','Checkout complete','Player '+m.name+' checked out · '+money(amount));setFlow(4);$('staff').innerHTML='<strong>✅ Player '+m.name+' checked out</strong><div class="hint">Amount: '+money(amount)+' · remaining group members stay active.</div>';log('Individual checkout · Player '+m.name+' · '+money(amount));notify('Individual checkout complete');render()}
-    function checkoutAll(groupId){const g=activeGroup(groupId);if(!g)return;const amount=price(g.started,g.members.length);billed+=amount;g.status='closed';openGroupId=null;openUntil=0;scanContext=null;setReader('SUCCESS','Checkout complete','Whole group '+g.id+' checked out · '+money(amount));setFlow(4);$('staff').innerHTML='<strong>✅ '+g.id+' checked out</strong><div class="hint">Whole-group amount: '+money(amount)+'.</div>';log('Whole-group checkout · '+g.id+' · '+money(amount));notify('Whole-group checkout complete');render()}
-    function dismiss(){openGroupId=null;openUntil=0;scanContext=null;setReader('IDLE','Reader is idle','The next new card starts a new group.');setFlow(1);$('staff').textContent='ยังไม่มีการสแกนล่าสุด';log('Reader dismissed · openGroup cleared');notify('Reader dismissed');render()}
-    function reset(){groups=[];openGroupId=null;openUntil=0;scanContext=null;billed=0;$('log').innerHTML='';$('staff').textContent='ยังไม่มีการสแกนล่าสุด';setReader('IDLE','Reader is idle','A new card starts a new group. An existing member card reopens that group.');setFlow(1);log('Demo reset');render();notify('Demo reset')}
-    $('tap').onclick=scan;$('dismiss').onclick=dismiss;$('reset').onclick=reset;setInterval(render,1000);reset();
+    const esc = text => String(text).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+    const labelOf = tagId => String(tagId || '').replace(/^tag_/, '');
+
+    // The reader's whole display vocabulary, as enumerated in docs/api-contract.md §3.1.
+    const SCREEN_COPY = {
+      idle:    ['IDLE',    'Reader is idle',       'The next new card starts a new group.'],
+      waiting: ['WAITING', 'Waiting for friends',  'Friends can scan within 30 seconds to join this group.'],
+      joined:  ['JOINED',  'Player joined',        'Added to the group through the open join window.'],
+      group:   ['GROUP',   'Group roster',         'Join window reopened. Staff selects checkout after payment.'],
+      success: ['SUCCESS', 'Checkout complete',    'Bill recorded. The reader returns to idle shortly.'],
+      error:   ['ERROR',   'Tag problem',          'The tag could not be used.'],
+    };
+    const FLOW_STEP = { idle: 1, waiting: 2, joined: 3, group: 4, success: 4, error: 1 };
+    const ERROR_TEXT = {
+      TAG_NOT_FOUND: 'This card is not registered.',
+      TAG_DISABLED: 'This card has been disabled.',
+      GROUP_NOT_FOUND: 'That group no longer exists.',
+      GROUP_ALREADY_CLOSED: 'That group is already checked out.',
+      GROUP_EMPTY: 'Nobody is checked in to that group.',
+      SESSION_ALREADY_CLOSED: 'That session is already closed.',
+      CONFIRMATION_REQUIRED: 'Checkout needs an explicit confirmation.',
+      VALIDATION_ERROR: 'That action is not valid.',
+      SYNC_FAILED: 'Sync failed — check the backend connection.',
+      SYNC_UNAVAILABLE: 'The backend is unreachable — check the connection.',
+      BILL_AMOUNT_MISMATCH: 'The bill changed — confirm the new amount.',
+      DEVICE_UNAUTHORIZED: 'The reader key was rejected by the backend.',
+      STAFF_UNAUTHORIZED: 'The staff token was rejected by the backend.',
+      TAG_DISABLED: 'This card has been disabled.',
+    };
+
+    let toastTimer = null;
+    let staffKey = null;
+    let groupsKey = null;
+    let logsKey = null;
+
+    function notify(text) {
+      const toast = $('toast');
+      toast.textContent = text;
+      toast.classList.add('show');
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => toast.classList.remove('show'), 2200);
+    }
+
+    function setFlow(step) {
+      [1, 2, 3, 4].forEach(i => $('f' + i).classList.toggle('on', i === step));
+    }
+
+    function setBadge(el, text, kind) {
+      el.textContent = text;
+      el.className = 'badge' + (kind ? ' ' + kind : '');
+    }
+
+    // ---- rendering ---------------------------------------------------------------------------
+
+    function render() {
+      const state = NFCSync.getState();
+      const now = Date.now();
+      // A backend failure surfaces on the reader itself, using the `error` screen the hardware
+      // vocabulary already defines (docs/api-contract.md §3.1). With no local mode there is no
+      // second UI pretending the demo still works. The staff view is driven by the `/ws/admin`
+      // scan.activity event (`staffScanOf`), which is all a second, staff-only window ever receives.
+      const disconnected = state.sync.status === 'error';
+      const screen = disconnected ? 'error' : screenOf(state, now);
+      const scan = disconnected ? null : staffScanOf(state, now);
+
+      renderReader(state, screen, scan);
+      renderCountdown(state, now);
+      renderStats(state);
+      renderGroups(state, scan);
+      renderStaff(state, scan);
+      renderLogs(state);
+      renderConnection(state.sync);
+    }
+
+    function renderReader(state, screen, scan) {
+      const copy = [...(SCREEN_COPY[screen] || SCREEN_COPY.idle)];
+      const openId = state.reader.openGroupId;
+      if (screen === 'error') {
+        copy[1] = 'Backend unavailable';
+        copy[2] = state.sync.detail || 'Could not connect to the backend.';
+      } else if (screen === 'group' && scan) {
+        copy[1] = 'Group ' + scan.groupId + ' roster';
+        copy[2] = 'Player ' + labelOf(scan.tagId) + ' is scanning · staff chooses checkout after payment.';
+      } else if (screen === 'waiting' && openId) {
+        copy[1] = 'Waiting for friends · ' + openId;
+      } else if (screen === 'joined' && openId) {
+        copy[1] = 'Joined ' + openId;
+      }
+      $('screen').innerHTML = esc(copy[0]) + '<small>' + esc(copy[1]) + '</small>';
+      $('readerTitle').textContent = copy[1];
+      $('readerText').textContent = copy[2];
+      setBadge($('readerBadge'), copy[0], screen === 'error' ? 'red' : screen === 'idle' ? '' : 'yellow');
+      setFlow(FLOW_STEP[screen] || 1);
+    }
+
+    function renderCountdown(state, now) {
+      const openId = openGroupIdOf(state, now);
+      $('windowText').textContent = openId
+        ? 'Join window: ' + openId + ' · ' + Math.max(0, Math.ceil((state.reader.openUntilMs - now) / 1000)) + 's'
+        : 'No open group';
+    }
+
+    function renderStats(state) {
+      const active = activeGroups(state);
+      const players = active.reduce((n, g) => n + (g.memberIds || []).length, 0);
+      const openId = openGroupIdOf(state);
+      $('groupCount').textContent = active.length + (active.length === 1 ? ' group' : ' groups');
+      $('people').textContent = players;
+      $('openGroup').textContent = openId || '—';
+      $('billed').textContent = baht(totalBilledSatang(state));
+    }
+
+    function renderGroups(state, scan) {
+      const active = activeGroups(state);
+      // The key must cover everything the markup is built from: a late-arriving `sessions`
+      // snapshot (Firestore delivers each collection independently) has to redraw the roster even
+      // though `memberIds` itself did not change. The trailing minute keeps the "since / X min"
+      // text fresh without re-rendering every second.
+      const roster = active.map(g => g.groupId + ':' + (g.memberIds || [])
+        .map(id => id + '@' + ((state.sessions[id] && state.sessions[id].checkInMs) || 'missing'))
+        .join(',')).join('|');
+      const key = roster + '#' + (scan ? scan.memberId : '') + '~' + Math.floor(Date.now() / 60000);
+      if (key === groupsKey) return;
+      groupsKey = key;
+      $('groups').innerHTML = active.length
+        ? active.map(group => groupHtml(state, group, scan)).join('')
+        : '<div class="empty">ยังไม่มีกลุ่ม active<br>Scan a new card to create one</div>';
+    }
+
+    function groupHtml(state, group, scan) {
+      const members = rosterOf(state, group).map(session => {
+        const scanning = scan && scan.memberId === session.sessionId ? ' · 🔎 scanning' : '';
+        const name = labelOf(session.tagId);
+        return '<div class="member"><span class="avatar">' + esc(name) + '</span><div><strong>Player '
+          + esc(name) + '</strong><small>' + minutesBetween(session.checkInMs, Date.now()) + ' min · since '
+          + clock(session.checkInMs) + scanning + '</small></div></div>';
+      }).join('');
+      return '<article class="group"><div class="group-top"><div><strong>' + esc(group.groupId) + ' · '
+        + (group.memberIds || []).length + ' players</strong><div class="group-meta">Started '
+        + clock(group.startTimeMs) + '</div></div><span class="badge">ACTIVE</span></div><div class="members">'
+        + (members || '<div class="hint">No members</div>') + '</div></article>';
+    }
+
+    function renderStaff(state, scan) {
+      const nextKey = scan ? scan.groupId + ':' + scan.memberId : 'none';
+      const group = scan ? state.groups[scan.groupId] : null;
+      const session = scan ? state.sessions[scan.memberId] : null;
+
+      if (!group || !session) {
+        // The scan activity arrives on `/ws/admin` and the roster arrives from `GET /groups`, so this
+        // can legitimately be asked to render before the group/session exists in state. Leave the key
+        // at 'none' in that case — claiming the key here is what used to freeze the panel on the
+        // placeholder even after the roster landed.
+        if (staffKey !== 'none') {
+          staffKey = 'none';
+          $('staff').innerHTML = '<strong>ยังไม่มีการสแกนล่าสุด</strong><div class="hint">Scan a card to open a group or reopen an existing roster.</div>';
+        }
+        return;
+      }
+
+      if (nextKey !== staffKey) {
+        staffKey = nextKey;
+        const name = esc(labelOf(session.tagId));
+        $('staff').innerHTML = '<strong>🔎 Player ' + name + ' is scanning</strong>'
+          + '<div class="hint">' + esc(group.groupId) + ' · individual <span id="billOne"></span> · whole group <span id="billAll"></span></div>'
+          + '<div class="staff-actions"><button id="one" class="btn red">✅ Check out Player ' + name + '</button>'
+          + '<button id="all" class="btn green">✅ Check out whole group</button></div>';
+        // ETA §9: the amount is shown before the confirmation, and the button press is the
+        // explicit affirmative action — there is no pre-ticked or implicit confirmation.
+        $('one').onclick = () => dispatch({
+          type: 'checkout-one', groupId: group.groupId, sessionId: session.sessionId, customerConfirmed: true,
+        });
+        $('all').onclick = () => dispatch({
+          type: 'checkout-all', groupId: group.groupId, customerConfirmed: true,
+        });
+      }
+
+      const now = Date.now();
+      const one = $('billOne');
+      const all = $('billAll');
+      // Amounts come from the backend whenever it publishes them: it is the ledger, and its figure is
+      // the one the check-out endpoint accepts. `amountFor` is only the fallback for the Firestore
+      // path (identical rule, docs/api-contract.md §4.1).
+      const oneAmount = session.amountSatang ?? amountFor(session.checkInMs, now, 1);
+      const allAmount = group.amountSatang ?? amountFor(group.startTimeMs, now, (group.memberIds || []).length);
+      if (one) one.textContent = baht(oneAmount);
+      if (all) all.textContent = baht(allAmount);
+    }
+
+    function renderLogs(state) {
+      const key = state.logs.map(e => e.at + '~' + e.text).join('|');
+      if (key === logsKey) return;
+      logsKey = key;
+      $('log').innerHTML = state.logs.length
+        ? state.logs.map(e => '<li><time>' + (e.at ? clockSeconds(e.at) : '--:--:--') + '</time>'
+            + (e.audited === false ? '· ' : '') + esc(e.text) + '</li>').join('')
+        : '<li>No events yet</li>';
+    }
+
+    // Connection indicator. It honours the device's own connectivity AND backend reachability
+    // (`sync.js` sets 'offline' for either), so a transient drop is visible without tearing down
+    // the reader screen.
+    const CONNECTION_COPY = {
+      connecting: ['CONNECTING', 'yellow', 'Connecting to the backend…'],
+      online: ['ONLINE', '', 'Connected — the backend is the single source of truth.'],
+      offline: ['OFFLINE', 'red', 'No backend connection — retrying.'],
+      error: ['OFFLINE', 'red', 'Could not connect to the backend.'],
+    };
+
+    function renderConnection(sync) {
+      const [label, kind, hint] = CONNECTION_COPY[sync.status] || CONNECTION_COPY.connecting;
+      setBadge($('connBadge'), label, kind);
+      $('connBadge').title = sync.detail ? hint + ' (' + sync.detail + ')' : hint;
+    }
+
+    // ---- commands ----------------------------------------------------------------------------
+    async function dispatch(cmd) {
+      const result = await NFCSync.dispatch(cmd);
+      if (result && result.error) {
+        notify('⚠️ ' + (ERROR_TEXT[result.error] || result.error));
+        return result;
+      }
+      if (cmd.type === 'scan') {
+        notify(result.screen === 'group' ? 'Group screen opened'
+          : result.screen === 'joined' ? 'Joined the open group' : 'New group created');
+      } else if (cmd.type === 'checkout-one' || cmd.type === 'checkout-all') {
+        notify('Checkout complete · ' + baht(result.amount || 0));
+      } else if (cmd.type === 'dismiss') {
+        notify('Reader dismissed');
+      }
+      return result;
+    }
+
+    $('tap').onclick = () => dispatch({ type: 'scan', tagId: 'tag_' + $('card').value, label: $('card').value });
+    $('dismiss').onclick = () => dispatch({ type: 'dismiss' });
+    $('reset').onclick = () => {
+      if (confirm('Reset the demo? Audit entries are retained (CCA §26 retention).')) dispatch({ type: 'reset' });
+    };
+
+    NFCSync.subscribe(render);
+    // Re-render each second for the join-window countdown and the running bill estimates.
+    setInterval(render, 1000);
+
+    // The backend is the only source of state — connect on load; a failure shows on the reader itself.
+    const sync = await NFCSync.init();
+    if (sync.status === 'error') notify('⚠️ Backend unavailable — ' + (sync.detail || ''));
   </script>
 </body>
 </html>

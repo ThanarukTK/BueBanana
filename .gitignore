@@ -17,3 +17,11 @@ build/
 # OS/editor noise
 .DS_Store
 Thumbs.db
+
+# Firebase demo config — copy of Demo/firebase-config.example.js, never committed
+# (AGENTS.md §5: no secrets or project credentials in the repo)
+Demo/firebase-config.js
+
+# Demo backend config — copy of Demo/backend-config.example.js. Holds the device key and staff
+# token for whatever backend the demo points at, so it is never committed either.
+Demo/backend-config.js

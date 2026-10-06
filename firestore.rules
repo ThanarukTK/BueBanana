@@ -1,0 +1,99 @@
+rules_version = '2';
+
+// =============================================================================================
+// Firestore rules for `Demo/group-demo.html` — the sync backend implemented in `Demo/sync.js`.
+//
+// HOW TO APPLY
+//   Option A (console):  Firestore Database → Rules → paste this whole file → Publish
+//   Option B (CLI):      firebase deploy --only firestore:rules --project <your-project-id>
+//
+// These collections hold SYNTHETIC demo data only: `tag_A` … `tag_H` style internal ids, group /
+// session ids, timestamps and satang amounts. No name, contact detail, payment data, or raw NFC
+// UID is ever written (`docs/rule.md`, PDPA data minimisation).
+//
+// This is NOT the production data path. `docs/structure.md` §4 keeps the real database reachable
+// only through the ElysiaJS backend, and `docs/api-convention.md` §3 gives the browser no
+// credentials at all — a client writing straight to Firestore cannot satisfy the audit
+// requirements in `rule.md` (CCA §26). See the note at the bottom of this file.
+// =============================================================================================
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Anonymous sign-in is enough for a demo, but "authenticated" is the floor.
+    // Never `if true`: that leaves the project world-writable for anyone with the project id.
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    // ---------------------------------------------------------------------------------------
+    // Operational demo state
+    // ---------------------------------------------------------------------------------------
+    // A single shared reader serialises the taps, so there is no cross-client contention to
+    // arbitrate here. The transactions in `sync.js` exist for correctness (no double billing),
+    // not for access control — that is this file's job.
+    //
+    // PDPA data minimisation is enforced by what the demo writes: synthetic tag ids and labels,
+    // never a name, contact detail, or raw NFC UID.
+
+    match /demoGroups/{groupId} {
+      allow read, create, update, delete: if signedIn();
+    }
+
+    match /demoSessions/{sessionId} {
+      allow read, create, update, delete: if signedIn();
+    }
+
+    // Resolves an internal tag id to the session currently checked in on it.
+    match /demoTags/{tagId} {
+      allow read, create, update, delete: if signedIn();
+    }
+
+    // Group numbering. Deleting it would let two devices mint the same group id, so no delete.
+    match /demoCounters/{docId} {
+      allow read, create, update: if signedIn();
+      allow delete: if false;
+    }
+
+    // The reader's current screen, open join window, and which member is scanning.
+    match /readerState/{docId} {
+      allow read, create, update: if signedIn();
+      allow delete: if false;
+    }
+
+    // ---------------------------------------------------------------------------------------
+    // Audit trail — APPEND ONLY
+    // ---------------------------------------------------------------------------------------
+    // `rule.md` (Computer Crime Act §26) requires logs that cannot be silently altered, and
+    // `docs/api-convention.md` §8.2 requires that deleting logs is a scheduled retention job,
+    // never a client action. So: create and read only, never update, never delete.
+    //
+    // NOTE: this demo collection is not the retained compliance log. The real one is written
+    // server-side and kept for ≥90 days; here it exists so the demo cannot rewrite history.
+    match /demoAudit/{entryId} {
+      allow read, create: if signedIn();
+      allow update, delete: if false;
+    }
+
+    // ---------------------------------------------------------------------------------------
+    // Everything else in this project
+    // ---------------------------------------------------------------------------------------
+    // Deploying any rules file REPLACES the whole ruleset for this database, so this fallback
+    // decides what happens to every other collection in the project.
+    //
+    // Default: deny. Correct if this is a demo-only / throwaway project (nothing else lives here).
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // If this project ALSO hosts other apps, swap the block above for this one instead — it keeps
+    // signed-in clients working on their own collections while still refusing anonymous access:
+    //
+    //   match /{document=**} {
+    //     allow read, write: if signedIn();
+    //   }
+    //
+    // Either way, the real per-app rules for those other collections still belong in a combined
+    // ruleset — this file only knows about the demo.
+  }
+}
