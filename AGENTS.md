@@ -19,6 +19,8 @@ must only redirect here — never duplicate or override the context.
 | 5 | [`docs/designdraft.md`](./docs/designdraft.md) | Feature list, user journey, prototype link, use-case / activity / sequence / class diagrams |
 | 6 | [`docs/structure.md`](./docs/structure.md) | Target system architecture (Frontend / Backend / Hardware / Database) |
 | 7 | [`Demo/README.md`](./Demo/README.md) | The current Web NFC demo: features, requirements, how to run it |
+| 8 | [`docs/backend-mvp.md`](./docs/backend-mvp.md) | The running ElysiaJS MVP: endpoints, WebSocket channels, storage modes, how the demo connects |
+| 9 | [`docs/supabase-migration-plan.md`](./docs/supabase-migration-plan.md) | Database schema, integrity guards, the Supabase connection rules, and the verification results |
 
 **Rule:** if a task touches check-in/check-out, sessions, billing, payments, user identity,
 NFC tag identity, logging/audit, or staff actions, you **must read `docs/rule.md` before writing code**
@@ -33,21 +35,32 @@ fewer queues, less staff workload, and a more usable experience than the café's
 
 ## 3. Current state vs. target state
 
-**Implemented today — `Demo/` only:**
+**Implemented today — `Demo/` + `backend/`:**
 
 - A static, **backend-less** Web NFC demo (`Demo/index.html`, `Demo/style.css`, `Demo/app.js`).
 - Web NFC (`navigator.nfc`) reads/writes an NDEF UUID to a tag; session totals live in `localStorage`.
-- Demo rate: **฿30/hour, billed per minute**. There is no backend and no persistence beyond the phone.
+- Demo rate: **฿30/hour, billed per minute**. There is no persistence beyond the phone.
 - Requires **Android + Chrome** and a **secure context** (HTTPS or `localhost`). Not supported on iOS.
+- A **group-flow demo** (`Demo/group-demo.html`) that drives the ElysiaJS MVP backend
+  (`backend/src`) over REST + WebSocket: a tap resolves to `waiting` / `joined` / `group`, staff check
+  out one member or the whole group, bills are priced server-side, and every state change is audited.
+  Run instructions and channel details: [`docs/backend-mvp.md`](./docs/backend-mvp.md).
+- The backend is an **in-memory development store** (`MemoryStore`); Supabase can replace it without
+  changing the HTTP contract.
 
-**Target architecture (not built yet):**
+**Target architecture:**
 
-| Part | Technology |
-|------|-----------|
-| Frontend | Next.js web app (customer + staff UI) |
-| Backend | ElysiaJS API server |
-| Hardware | ESP32 + NFC reader + screen (Arduino C++ firmware) |
-| Database | Supabase (PostgreSQL), reachable **only** through the backend |
+| Part | Technology | Status |
+|------|-----------|--------|
+| Frontend | Next.js web app (customer + staff UI) | Not built — `Demo/` is the prototype UI |
+| Backend | ElysiaJS API server | **MVP in `backend/`** (REST + `/ws/reader` + `/ws/admin`) |
+| Hardware | ESP32 + NFC reader + screen (Arduino C++ firmware) | Not built — the demo simulates the reader |
+| Database | Supabase (PostgreSQL), reachable **only** through the backend | **Postgres repository built and verified**; `MemoryStore` stays the default so no credentials are needed to run or test |
+
+Storage is one env var (`STORE=memory|postgres`) behind `backend/src/repository.ts`: the schema, migrations
+and the Postgres store are in place and verified against PostgreSQL 16, and Supabase is a connection
+string plus `bun run migrate` away. See [`docs/backend-mvp.md`](./docs/backend-mvp.md) and
+[`docs/supabase-migration-plan.md`](./docs/supabase-migration-plan.md).
 
 Data flow: NFC tag tap → ESP32 → ElysiaJS API → Supabase → status returned to ESP32 screen and Next.js UI.
 
@@ -57,11 +70,21 @@ Data flow: NFC tag tap → ESP32 → ElysiaJS API → Supabase → status return
 NFC_boardgame_reader/
 ├── AGENTS.md          # this file — primary shared context
 ├── claude.md          # pointer for Claude-family tools → AGENTS.md
+├── backend/           # ElysiaJS API MVP (Bun)
+│   ├── src/app.ts     #   routes + /ws/reader + /ws/admin, auth, CORS (dev)
+│   ├── src/domain.ts  #   pricing, group projection, UID hashing
+│   ├── src/realtime.ts#   WebSocket topics + event payloads (§3.2 / §4.2)
+│   ├── src/store.ts   #   MemoryStore (in-memory development repository)
+│   ├── src/server.ts  #   dev entry point
+│   └── src/app.test.ts#   contract + socket tests (`bun test`)
 ├── Demo/              # working proof-of-concept demo (plain HTML/CSS/JS)
-│   ├── index.html     # demo page (modes, game grid, log)
+│   ├── index.html     # offline Web NFC demo (modes, game grid, log)
 │   ├── style.css      # mobile-first styling
 │   ├── app.js         # Web NFC read/write + check-in/out logic
-│   └── README.md      # the Web NFC demo (features, setup + usage)
+│   ├── group-demo.html# one-shared-reader group flow, wired to backend/ by default
+│   ├── sync.js        # backend facade: REST + WebSocket, optional Firestore layer
+│   ├── backend-config.example.js # copy to backend-config.js (gitignored)
+│   └── README.md      # the Web NFC demos (features, setup + usage)
 └── docs/              # single source of truth for all project docs + diagrams
     ├── rule.md        # legal / compliance rules (PDPA, CCA §26, ETA) — MANDATORY
     ├── proposal.md    # problem, users, objectives
@@ -70,6 +93,7 @@ NFC_boardgame_reader/
     ├── structure.md   # target architecture
     ├── api-convention.md # backend API conventions (endpoints, envelope, auth, compliance rules)
     ├── api-contract.md # concrete wire contract for frontend/backend/hardware communication
+    ├── backend-mvp.md # what the running MVP implements + how to run/demo it
     └── README.md      # one-line repo placeholder (not the demo's README)
 ```
 
@@ -90,7 +114,15 @@ NFC_boardgame_reader/
   Do not grow it into the production system — production code goes in the target stack (§3).
 - **No new frameworks in the demo:** the demo must keep working by opening it over HTTPS/localhost
   with no build step and no dependencies.
-- **No secrets in the repo:** never commit API keys, Supabase service keys, or credentials.
+- **The demo's backend is configuration, not code:** `Demo/backend-config.js` (gitignored, copy of the
+  `.example`) selects `rest` — the ElysiaJS API, the contract-faithful path — or `firestore`, the
+  earlier demo plumbing. Nothing but `Demo/sync.js` talks to a backend, and the UI never prices a bill
+  the backend has not reported.
+- **No secrets in the repo:** never commit API keys, Supabase service keys, or credentials. The backend
+  reads `STORE`, `DATABASE_URL` and `TAG_UID_PEPPER` from `backend/.env` (gitignored; `.env.example` is
+  committed with placeholders). On this team repo **every teammate provisions their own `.env`** — a
+  connection string or service key must not travel through the repo, an issue tracker, or a chat window.
+  The frontend and the ESP32 never receive database credentials: the backend is the only client.
 
 ## 6. Mandatory compliance context (`rule.md`)
 

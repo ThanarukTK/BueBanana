@@ -294,7 +294,7 @@ Instead, the connection is **scoped to the `group` screen only**:
 - **If the connection can't be opened or drops** (ESP32 Wi-Fi drops are expected, not exceptional)
   while the `group` screen is still showing, the reader falls back to polling
   `GET /api/v1/reader/state` every few seconds for the remainder of that window. Firmware must
-  implement both paths.
+  implement both paths. (Implemented in the MVP backend — see §8 for the exact poll responses.)
 
 Messages on this channel reuse the exact same `{ "data": { "screen": ... } }` shape as the
 `POST /api/v1/scans` response (§3.1) — no `event` wrapper. Firmware only ever needs one rule: whatever
@@ -414,7 +414,8 @@ Response:
 ### 4.2 `WSS /ws/admin` — live scanning indicator (PB-14)
 
 One connection per staff session, filtered server-side to what that staff member's role can see.
-Three event types, each with a full example:
+Three event types, each with a full example. (Implemented in the MVP backend; `scan.activity` carries
+one additive field — see §8.)
 
 **`scan.activity`** — fires the instant a tap resolves, so staff see who's scanning in real time:
 
@@ -639,3 +640,26 @@ WSS /ws/reader
 | Reader push channel (§3.2) | PB-02, PB-12, PB-13 |
 | Admin WebSocket (§4.2) — table-mapping gap noted | PB-14 |
 | REST catalog (§4.1) | PB-02–PB-04, PB-08–PB-10, PB-12, PB-13, PB-15 |
+
+## 8. Implementation notes — MVP backend
+
+`docs/backend-mvp.md` documents the running backend. Three points where the MVP (deliberately) goes
+*beyond* the letter of this contract, all of them additions rather than changes, which §3.4 permits
+inside `/api/v1`:
+
+1. **Additive fields.** `sessionId` and `amountSatang` appear per entry in `Group.tags[]` (and
+   `amountSatang` again for the whole group), `scan.activity` carries `sessionId`, the `/ws/reader`
+   payloads carry `groupId`, and `GET /groups` adds a `reader` block with the current join window and
+   the amounts billed. Nothing existing is removed or repurposed; a client written against §2/§3.2/§4.2
+   alone still parses every message.
+2. **Browser WebSocket credentials.** A browser cannot set a custom header on a handshake, so
+   `/ws/reader` also accepts `?deviceKey=` and `/ws/admin` also accepts `?token=`. The headers in §1
+   remain the contract for firmware and server-side clients.
+3. **Polling fallback shape.** §3.2 requires a polling path but does not fix its response. The MVP
+   answers `GET /api/v1/reader/state` with `200` + the pending `{ "data": { "screen": ... } }` payload
+   (claimed exactly once) or `204` when nothing is pending, so "nothing to render" can never be
+   mistaken for a screen change.
+
+Two endpoints in the MVP are **development-only** and not part of the production catalog:
+`POST /api/v1/demo/reset` (restarts the demo without killing the process, keeps the audit log) and the
+`OPTIONS` CORS allowance described in `backend-mvp.md`. A production `/api/v2` should not carry either.
