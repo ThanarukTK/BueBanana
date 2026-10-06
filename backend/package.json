@@ -5,11 +5,15 @@
   "scripts": {
     "dev": "bun --watch src/server.ts",
     "dev:local": "bun src/server.ts",
+    "dev:postgres": "STORE=postgres bun --watch src/server.ts",
     "start": "bun src/server.ts",
+    "migrate": "bun src/db/migrate.ts",
+    "retention": "bun src/db/retention.ts",
     "test": "bun test"
   },
   "dependencies": {
-    "elysia": "latest"
+    "elysia": "latest",
+    "postgres": "^3.4.5"
   },
   "devDependencies": {
     "@types/bun": "latest"
