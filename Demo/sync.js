@@ -864,13 +864,43 @@ async function createRestBackend(setState, setStatus) {
   let pollTimer = null;
   let reconnectTimer = null;
   let disposed = false;
+  let refreshInFlight = null;
+  let refreshAgain = false;
 
   const publish = () => setState({ ...state, activity });
   const pushLog = (text, audited = true) => {
     state = { ...state, logs: [{ at: Date.now(), text, audited }, ...state.logs].slice(0, 40) };
   };
 
+  /**
+   * Read the current state from the API.
+   *
+   * Coalesced on purpose. Several things ask for a refresh at once — a tap's own response, a
+   * `/ws/admin` event, the reader socket — and two overlapping GETs can resolve out of order, so the
+   * older snapshot lands last and overwrites the newer one. That shows up as a roster stuck one member
+   * behind the activity log, which is exactly the kind of thing that looks broken on stage. One request
+   * at a time, with a single re-run queued if anything asked while it was in flight.
+   */
   async function refresh() {
+    if (refreshInFlight) {
+      refreshAgain = true;
+      return refreshInFlight;
+    }
+    let result;
+    try {
+      refreshInFlight = loadState();
+      result = await refreshInFlight;
+    } finally {
+      refreshInFlight = null;
+    }
+    if (refreshAgain && !disposed) {
+      refreshAgain = false;
+      return refresh();
+    }
+    return result;
+  }
+
+  async function loadState() {
     const [active, closed] = await Promise.all([
       api('GET', '/api/v1/groups?status=active', { headers: staffHeaders }),
       api('GET', '/api/v1/groups?status=closed', { headers: staffHeaders }),

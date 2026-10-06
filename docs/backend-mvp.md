@@ -167,8 +167,9 @@ behind one HTTPS host, where no CORS layer is needed.
 
 ## Demo wiring
 
-`Demo/group-demo.html` runs the documented flow against this backend (REST for commands, WebSocket for
-live updates) — see `Demo/README.md` for how to start both halves. The swap is a config choice, not a
+`Demo/index.html` (the only demo) runs the documented flow against this backend (REST for commands,
+WebSocket for live updates) — see `Demo/README.md` for how to start both halves, and
+`docs/deploy-backend.md` for hosting them. The swap is a config choice, not a
 code change: `Demo/sync.js` has one `rest` backend and the earlier `firestore` plumbing behind the same
 `NFCSync` facade.
 

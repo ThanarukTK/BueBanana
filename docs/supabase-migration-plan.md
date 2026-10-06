@@ -18,7 +18,7 @@ replaces it without changing a single endpoint, payload or WebSocket message.
 ## What does *not* change
 
 - The HTTP contract and the two sockets (`docs/api-contract.md` §3.1/§3.2/§4.1/§4.2) — byte for byte.
-- `Demo/group-demo.html` and `Demo/sync.js`. The demo cannot tell which store is behind the API.
+- `Demo/index.html` and `Demo/sync.js`. The demo cannot tell which store is behind the API.
 - The credential-free path: with `STORE` unset the server still runs `bun test` and `bun run dev:local`
   on the in-memory store with no database and no `.env`.
 
@@ -124,9 +124,9 @@ connection string differs.
 | 3 | No raw UID in the database; not a plain sha256 | ✅ stored value equals the peppered HMAC, differs from sha256 |
 | 4 | Two concurrent taps for one card | ✅ `race=[created, already-open]`, exactly one open session; the partial unique index also rejects a hand-written second open row |
 | 5 | Second check-out of the same session | ✅ `404 SESSION_ALREADY_CLOSED` — one receipt, no double bill |
-| 6 | `bun test` with no `DATABASE_URL` | ✅ 16 pass (in-memory store) |
-| 7 | `bun test` with `DATABASE_URL` set | ✅ 16 pass (Postgres store, clean schema per test) |
-| 8 | `Demo/group-demo.html` unchanged against `STORE=postgres` | ✅ waiting → joined → roster → check-out, reader push included |
+| 6 | `bun test` with no `DATABASE_URL` | ✅ 18 pass (in-memory store) |
+| 7 | `bun test` with `DATABASE_URL` set | ✅ 18 pass (Postgres store, clean schema per test) |
+| 8 | `Demo/index.html` unchanged against `STORE=postgres` | ✅ waiting → joined → roster → check-out, reader push included |
 | 9 | Retention job | ✅ `purge_audit_log_before` removed exactly the aged entry and nothing else |
 | 10 | A confirmed receipt cannot be silently restated | ✅ second write ignored; first confirmation stands |
 

@@ -25,7 +25,11 @@ export function connectionOptions(databaseUrl: string, overrides: Record<string,
   const isLocal = host === 'localhost' || host === '127.0.0.1' || host === '::1';
   return {
     max: 5,
-    idle_timeout: 20,
+    // Keep the pool warm between taps. A demo taps sporadically, and each reconnect to the Supabase
+    // pooler pays a fresh TLS handshake (and, from a distant region, hundreds of ms) — so an idle
+    // timeout shorter than the gap between taps turns every tap into a cold connection. 0 would never
+    // expire; 60s covers a demo pause without holding slots forever.
+    idle_timeout: 60,
     // Transaction-mode pooling (port 6543) cannot use prepared statements.
     prepare: port !== '6543',
     ...(isLocal ? {} : { ssl: 'require' as const }),

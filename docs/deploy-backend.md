@@ -75,6 +75,18 @@ boots. Two consequences:
 - Or run a free uptime monitor (e.g. UptimeRobot) pinging `https://<service>.onrender.com/health` every
   5-10 minutes for the week you need it.
 
+## Region and latency — pick Singapore
+
+Measured from Thailand against a service in Render's default region: **1.1-2.7s per API call**, so a tap
+took 2-4s to appear. That is mostly distance, twice over: your browser → Render, and Render → Supabase
+(`ap-northeast-1`, Tokyo). Choosing **Singapore** when creating the service puts both hops next to each
+other (Thailand→Singapore ~50-70ms, Singapore→Tokyo ~30ms) and should bring calls to a few hundred ms.
+
+Region cannot be changed after creation — you would recreate the service (env vars and the Dockerfile-less
+setup take two minutes to redo). Also note the API keeps its database connections warm for a minute
+(`idle_timeout` in `src/db/connect.ts`), because a demo taps sporadically and a cold pooler connection
+costs a full TLS handshake on every tap.
+
 ## Pointing the frontend at it
 
 `Demo/sync.js` derives everything from one base URL — REST `https://…` and the sockets `wss://…` — so the

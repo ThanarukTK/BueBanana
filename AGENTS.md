@@ -37,16 +37,21 @@ fewer queues, less staff workload, and a more usable experience than the café's
 
 **Implemented today — `Demo/` + `backend/`:**
 
-- A static, **backend-less** Web NFC demo (`Demo/index.html`, `Demo/style.css`, `Demo/app.js`).
-- Web NFC (`navigator.nfc`) reads/writes an NDEF UUID to a tag; session totals live in `localStorage`.
-- Demo rate: **฿30/hour, billed per minute**. There is no persistence beyond the phone.
+- A static, **backend-less** Web NFC demo (the original pay-per-play timer) proved Web NFC works on a
+  real phone; the group flow below replaced it. Its `Demo/index.html`, `Demo/style.css` and `Demo/app.js`
+  are recoverable from git history.
+- Web NFC (`navigator.nfc`) reads/writes an NDEF UUID to a tag; that demo's session totals lived in
+  `localStorage`, with a demo rate of **฿30/hour, billed per minute**. There was no persistence beyond
+  the phone.
 - Requires **Android + Chrome** and a **secure context** (HTTPS or `localhost`). Not supported on iOS.
-- A **group-flow demo** (`Demo/group-demo.html`) that drives the ElysiaJS MVP backend
+- A **group-flow demo** (`Demo/index.html` — the only demo) that drives the ElysiaJS backend
   (`backend/src`) over REST + WebSocket: a tap resolves to `waiting` / `joined` / `group`, staff check
   out one member or the whole group, bills are priced server-side, and every state change is audited.
   Run instructions and channel details: [`docs/backend-mvp.md`](./docs/backend-mvp.md).
-- The backend is an **in-memory development store** (`MemoryStore`); Supabase can replace it without
-  changing the HTTP contract.
+- The backend runs on either an **in-memory store** (`STORE=memory`, the default, so `bun test` and
+  `bun run dev:local` need no credentials) or **Postgres** (`STORE=postgres` — Supabase; `bun run
+  migrate` applies `backend/migrations/`). The HTTP contract is identical either way, and deployment is
+  covered in [`docs/deploy-backend.md`](./docs/deploy-backend.md).
 
 **Target architecture:**
 
@@ -74,17 +79,18 @@ NFC_boardgame_reader/
 │   ├── src/app.ts     #   routes + /ws/reader + /ws/admin, auth, CORS (dev)
 │   ├── src/domain.ts  #   pricing, group projection, UID hashing
 │   ├── src/realtime.ts#   WebSocket topics + event payloads (§3.2 / §4.2)
-│   ├── src/store.ts   #   MemoryStore (in-memory development repository)
-│   ├── src/server.ts  #   dev entry point
-│   └── src/app.test.ts#   contract + socket tests (`bun test`)
-├── Demo/              # working proof-of-concept demo (plain HTML/CSS/JS)
-│   ├── index.html     # offline Web NFC demo (modes, game grid, log)
-│   ├── style.css      # mobile-first styling
-│   ├── app.js         # Web NFC read/write + check-in/out logic
-│   ├── group-demo.html# one-shared-reader group flow, wired to backend/ by default
+│   ├── src/config.ts  #   environment → Config (STORE, DATABASE_URL, TAG_UID_PEPPER, keys)
+│   ├── src/repository.ts# repository seam: memory | postgres behind one transaction API
+│   ├── src/stores/    #   memory-store.ts (default) | postgres-store.ts
+│   ├── src/db/        #   migrate.ts, connect.ts, retention.ts
+│   ├── src/server.ts  #   entry point (dev and container)
+│   ├── src/app.test.ts#   contract + socket tests (`bun test`)
+│   └── migrations/    #   0001_init.sql — schema, constraints, append-only audit trigger
+├── Demo/              # working proof-of-concept demo (this folder is what you deploy)
+│   ├── index.html     # one-shared-reader group flow, wired to backend/ by default
 │   ├── sync.js        # backend facade: REST + WebSocket, optional Firestore layer
 │   ├── backend-config.example.js # copy to backend-config.js (gitignored)
-│   └── README.md      # the Web NFC demos (features, setup + usage)
+│   └── README.md      # the demo (features, setup, deploy + usage)
 └── docs/              # single source of truth for all project docs + diagrams
     ├── rule.md        # legal / compliance rules (PDPA, CCA §26, ETA) — MANDATORY
     ├── proposal.md    # problem, users, objectives
