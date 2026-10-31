@@ -1,0 +1,1 @@
+﻿defect_id,date_found,phase,found_by,tc_id,participant_id,flow,severity_S1_S4,priority_H_M_L,title,steps_to_reproduce,expected,actual,environment,status,assigned_to,fix_commit,retest_date,retest_result,notes
