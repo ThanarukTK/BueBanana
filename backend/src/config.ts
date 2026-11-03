@@ -9,11 +9,10 @@
 export type StoreKind = 'memory' | 'postgres';
 
 /**
- * Development-only pepper. It is a real HMAC key, but it is public in this repo, so it protects nothing;
- * the server rejects it whenever a database is in use (a persisted hash outlives the code that made it,
- * so this must be right *before* the first row — `docs/supabase-migration-plan.md`).
+ * The UID pepper (`TAG_UID_PEPPER`) was removed at the owner's request — `hashTagUid` no longer
+ * keys on a secret (see domain.ts). The pepper requirement, the dev default and the Postgres guard
+ * that went with it are gone. The value may still sit in `.env`; it is simply ignored.
  */
-export const DEV_TAG_UID_PEPPER = 'dev-tag-uid-pepper-not-for-production';
 
 const PASSWORD_MARKER = /\[(?:YOUR-)?PASSWORD\]/i;
 
@@ -55,7 +54,6 @@ export type Config = {
   port: number;
   store: StoreKind;
   databaseUrl: string | null;
-  tagUidPepper: string;
   deviceKey: string;
   staffToken: string;
   staffId: string;
@@ -63,26 +61,16 @@ export type Config = {
 
 export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
   const store: StoreKind = env.STORE === 'postgres' ? 'postgres' : 'memory';
-  const tagUidPepper = (env.TAG_UID_PEPPER ?? '').trim() || DEV_TAG_UID_PEPPER;
   const databaseUrl = resolveDatabaseUrl(env);
 
-  if (store === 'postgres') {
-    if (!databaseUrl) {
-      throw new Error('DATABASE_URL is required when STORE=postgres (see backend/.env.example).');
-    }
-    if (tagUidPepper === DEV_TAG_UID_PEPPER) {
-      throw new Error(
-        'TAG_UID_PEPPER must be set to a private value when STORE=postgres: the development pepper is '
-        + 'public in this repo, and persisted UID hashes cannot be re-keyed cheaply afterwards.',
-      );
-    }
+  if (store === 'postgres' && !databaseUrl) {
+    throw new Error('DATABASE_URL is required when STORE=postgres (see backend/.env.example).');
   }
 
   return {
     port: Number(env.PORT ?? 3000),
     store,
     databaseUrl,
-    tagUidPepper,
     deviceKey: env.DEVICE_API_KEY ?? 'dev-device-key',
     staffToken: env.STAFF_API_TOKEN ?? 'dev-staff-token',
     staffId: env.DEV_STAFF_ID ?? 'staff-dev-1',

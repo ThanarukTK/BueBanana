@@ -117,8 +117,31 @@ export function createApp(options: AppOptions = {}) {
         return errorBody('STAFF_UNAUTHORIZED', 'Staff authentication required');
       }
       const tag = await repo.transaction(async (tx) => {
-        const registered = await tx.registerTag(hashTagUid(body.rawTagUid, config.tagUidPepper), body.label ?? null);
+        const registered = await tx.registerTag(hashTagUid(body.rawTagUid), body.label ?? null);
         await tx.appendAudit({ actor: staffId, tagId: registered.tagId, action: 'tag.register', endpoint: '/api/v1/nfc-tags', result: 'success' });
+        return registered;
+      });
+      set.status = 201;
+      return { data: { tagId: tag.tagId, label: tag.label, status: tag.status } };
+    }, {
+      body: t.Object({ rawTagUid: t.String({ minLength: 1 }), label: t.Optional(t.String({ maxLength: 80 })) }),
+    })
+
+    // -------------------------------------------------------------------------------------
+    // Reader: on-device NFC registration (PB-15) — device-authenticated, the same
+    // idempotent registration as the staff endpoint, audited as the device.
+    //
+    // The firmware registers a card it has read on the reader itself, so staff do not need a
+    // laptop + curl. The raw UID is hashed exactly as in the staff path and never returned (PDPA).
+    // -------------------------------------------------------------------------------------
+    .post('/api/v1/reader/nfc-tags', async ({ request, body, set }) => {
+      if (!deviceAuthorized(request, null, config)) {
+        set.status = 401;
+        return errorBody('DEVICE_UNAUTHORIZED', 'Reader authentication required');
+      }
+      const tag = await repo.transaction(async (tx) => {
+        const registered = await tx.registerTag(hashTagUid(body.rawTagUid), body.label ?? null);
+        await tx.appendAudit({ actor: 'device', tagId: registered.tagId, action: 'tag.register', endpoint: '/api/v1/reader/nfc-tags', result: 'success' });
         return registered;
       });
       set.status = 201;
@@ -137,7 +160,7 @@ export function createApp(options: AppOptions = {}) {
       }
 
       const now = Date.now();
-      const uidHash = hashTagUid(body.rawTagUid, config.tagUidPepper);
+      const uidHash = hashTagUid(body.rawTagUid);
 
       const outcome = await repo.transaction(async (tx) => {
         // §10 idempotency: a firmware retry on a flaky link must not double-create a session.
@@ -194,9 +217,12 @@ export function createApp(options: AppOptions = {}) {
         const view = (await tx.groupView(group.groupId))!;
         const projected = groupResponse(group, view.members, now);
         const response = {
-          data: screen === 'waiting'
-            ? { screen, groupId: group.groupId, tagId: tag.tagId }
-            : { screen, groupId: group.groupId, tags: projected.tags },
+          data: {
+            screen,
+            groupId: group.groupId,
+            tagId: tag.tagId,                         // the card just scanned (additive, §3.4) — lets the reader mark "who is scanning"
+            ...(screen === 'waiting' ? {} : { tags: projected.tags }),
+          },
         };
         await tx.rememberScan(uidHash, now, response);
         await tx.appendAudit({

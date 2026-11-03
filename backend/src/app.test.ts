@@ -200,16 +200,17 @@ describe('backend MVP', () => {
     expect(after).toBeNull();
   });
 
-  it('stores only a peppered HMAC of the UID, never a bare hash', async () => {
-    // A low-entropy UID hashed with plain sha256 is enumerable back to the card, so the stored value
-    // must depend on a server-side pepper. This is the guard for that decision.
+  it('stores only a hash of the normalized UID, never a bare hash or the raw UID', async () => {
+    // The pepper was removed at the owner's request, so the stored value is a plain sha256 of the
+    // normalised UID. PDPA minimisation is thinner now (enumeration back to the card is possible),
+    // but the raw UID is still never stored or returned.
     const raw = '04A3B2C1D4';
-    const peppered = hashTagUid(raw, config.tagUidPepper);
-    expect(peppered).toHaveLength(64);
-    expect(peppered).not.toBe(hashTagUid(raw, 'a-different-pepper'));
-    expect(peppered).toBe(hashTagUid(` ${raw.toLowerCase()} `, config.tagUidPepper)); // normalised
+    const h = hashTagUid(raw);
+    expect(h).toHaveLength(64);
+    expect(h).toBe(hashTagUid(` ${raw.toLowerCase()} `));   // normalised
     const bareSha256 = new Bun.CryptoHasher('sha256').update(raw.trim().toUpperCase()).digest('hex');
-    expect(peppered).not.toBe(bareSha256);
+    expect(h).toBe(bareSha256);                              // plain sha256, no pepper
+    expect(JSON.stringify({ h })).not.toContain(raw);        // raw UID itself still not stored/returned
   });
 
   it('joins a second tag and rejects checkout without explicit confirmation', async () => {
@@ -246,6 +247,36 @@ describe('backend MVP', () => {
     const afterReset = await json(await scan(app, 'AA'));
     expect(afterReset.data.screen).toBe('waiting');
     expect(afterReset.data.tagId).toBe(first.data.tagId);
+  });
+
+  it('registers a tag from the reader (device auth) and never returns the raw UID', async () => {
+    const app = await makeApp();
+    const register = (rawTagUid: string, key = config.deviceKey) =>
+      app.handle(new Request('http://localhost/api/v1/reader/nfc-tags', {
+        method: 'POST',
+        headers: { 'x-device-key': key, 'content-type': 'application/json' },
+        body: JSON.stringify({ rawTagUid }),
+      }));
+
+    // Staff can be absent: the reader itself can register a card it has read.
+    const created = await register('04A3B2C1D4');
+    expect(created.status).toBe(201);
+    const tag = await json(created);
+    expect(tag.data.tagId).toBeString();
+    expect(JSON.stringify(tag)).not.toContain('04A3B2C1D4');   // PDPA: raw UID never comes back
+
+    // Idempotent, like the staff path: a retry re-registers the same identity.
+    const again = await json(await register('04a3b2c1d4'));    // normalised to the same UID
+    expect(again.data.tagId).toBe(tag.data.tagId);
+
+    // The registered identity is immediately scannable by the same device.
+    const scanned = await json(await scan(app, '04A3B2C1D4'));
+    expect(scanned.data.screen).toBe('waiting');
+    expect(scanned.data.tagId).toBe(tag.data.tagId);
+
+    // A wrong device key is refused — registration is not open to the network.
+    const rejected = await register('04A3B2C1D4', 'nope');
+    expect(rejected.status).toBe(401);
   });
 
   it('prices every bill at ฿30/hour in whole started minutes', async () => {
@@ -501,13 +532,12 @@ describe('configuration', () => {
       .toThrow(/DATABASE_PASSWORD/);
   });
 
-  it('refuses to run against a database with the public development pepper', () => {
-    expect(() => loadConfig({ STORE: 'postgres', DATABASE_URL: 'postgresql://x' } as NodeJS.ProcessEnv))
-      .toThrow(/TAG_UID_PEPPER/);
-    expect(() => loadConfig({ STORE: 'postgres', TAG_UID_PEPPER: 'private' } as NodeJS.ProcessEnv))
-      .toThrow(/DATABASE_URL/);
-    const ok = loadConfig({ STORE: 'postgres', DATABASE_URL: 'postgresql://x', TAG_UID_PEPPER: 'private' } as NodeJS.ProcessEnv);
+  it('requires DATABASE_URL when running Postgres; any residual pepper is ignored', () => {
+    expect(() => loadConfig({ STORE: 'postgres' } as NodeJS.ProcessEnv)).toThrow(/DATABASE_URL/);
+    // A leftover TAG_UID_PEPPER in .env is no longer required or read.
+    const ok = loadConfig({ STORE: 'postgres', DATABASE_URL: 'postgresql://x', TAG_UID_PEPPER: 'whatever' } as NodeJS.ProcessEnv);
     expect(ok.store).toBe('postgres');
+    expect((ok as any).tagUidPepper).toBeUndefined();
   });
 
   it('defaults to the in-memory store with no environment at all', () => {

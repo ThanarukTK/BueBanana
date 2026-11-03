@@ -1,4 +1,4 @@
-import { createHmac } from 'node:crypto';
+import { createHash } from 'node:crypto';
 
 export const RATE_PER_HOUR_SATANG = 3000;
 /**
@@ -57,16 +57,17 @@ export type RosterMember = { tag: Tag; session: Session };
 export type GroupView = { group: Group; members: RosterMember[] };
 
 /**
- * Internal identifier for a physical card: HMAC-SHA256 of the normalised raw UID, keyed by a
- * server-side pepper (`TAG_UID_PEPPER`).
+ * Internal identifier for a physical card: SHA-256 of the normalised raw UID.
  *
- * Why not a plain `sha256(rawUid)`: an NFC UID is a handful of bytes, so its hash space is small enough
- * to enumerate — a bare hash would let anyone holding the table map every row back to the physical card
- * it identifies, which is exactly the personal-data link PDPA asks us to minimise. The pepper never
- * leaves the backend (`docs/rule.md`, `docs/api-convention.md` §7).
+ * NOTE: this used to be HMAC-SHA256 keyed by a server-side pepper (`TAG_UID_PEPPER`) so the
+ * low-entropy UID hash could not be enumerated back to the physical card (PDPA minimisation,
+ * rule.md). The pepper was removed at the owner's request — the hash is now a bare sha256, which
+ * anyone with the table can reverse for a given card. The DB was wiped in the same change, so old
+ * peppered hashes do not collide. Restore the pepper (and re-key) if this is a compliance concern:
+ * the earlier code is in git history.
  */
-export function hashTagUid(rawTagUid: string, pepper: string): string {
-  return createHmac('sha256', pepper).update(rawTagUid.trim().toUpperCase()).digest('hex');
+export function hashTagUid(rawTagUid: string): string {
+  return createHash('sha256').update(rawTagUid.trim().toUpperCase()).digest('hex');
 }
 
 /**
