@@ -1185,6 +1185,15 @@ async function createRestBackend(setState, setStatus) {
           return { screen: 'idle' };
         }
 
+        if (cmd.type === 'register-tag') {
+          const tag = await api('POST', '/api/v1/nfc-tags', {
+            headers: staffHeaders,
+            body: { rawTagUid: cmd.rawTagUid, label: cmd.label || null },
+          });
+          pushLog(`tag registered · ${demoTagId(tag.data.tagId)}`, true);
+          return { screen: 'idle', tagId: tag.data.tagId };
+        }
+
         return { error: 'VALIDATION_ERROR' };
       } catch (error) {
         markOffline(error.code || 'request failed');

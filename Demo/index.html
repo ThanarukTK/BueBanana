@@ -10,7 +10,7 @@
     header{padding:28px 18px 22px;border-bottom:1px solid var(--line);background:#0b0e18aa}header>div,main{max-width:900px;margin:auto}.header-row{display:flex;justify-content:space-between;align-items:flex-start;gap:14px}.eyebrow{color:var(--green);font-size:.74rem;font-weight:800;letter-spacing:.13em;text-transform:uppercase}h1{margin:4px 0;font-size:clamp(1.7rem,4vw,2.4rem)}h2{margin:0 0 4px;font-size:1.1rem}.hint{color:var(--muted)}
     main{padding:22px 18px 60px}.panel{padding:18px;margin-bottom:18px;border:1px solid var(--line);border-radius:16px;background:#1b2031ee;box-shadow:0 14px 35px #0003}.panel-head{display:flex;justify-content:space-between;gap:12px;align-items:flex-start;margin-bottom:15px}.badge{padding:4px 9px;border-radius:999px;background:#39d39a20;color:var(--green);font-size:.75rem;font-weight:800;white-space:nowrap}.badge.yellow{background:#ffd16620;color:var(--yellow)}.badge.red{background:#ff708120;color:var(--red)}
     .reader{display:grid;grid-template-columns:170px 1fr;gap:16px;align-items:center;padding:16px;border:1px solid #8065ff88;border-radius:14px;background:#8065ff12}.reader-screen{min-height:130px;display:grid;place-items:center;padding:14px;border-radius:12px;background:#0b0e18;color:var(--green);text-align:center;font-weight:800}.reader-screen small{display:block;margin-top:6px;color:var(--muted);font-weight:500}.reader-copy strong{font-size:1.15rem}.reader-copy p{margin:7px 0;color:var(--muted)}
-    .controls{display:flex;flex-wrap:wrap;gap:9px;margin-top:16px}.btn{padding:10px 13px;border-radius:10px;background:var(--panel2);font-weight:750}.btn.primary{background:var(--purple)}.btn.green{background:#187c5c}.btn.red{background:#8f3044}.btn:disabled{opacity:.4;cursor:not-allowed}.select-row label{display:block;max-width:300px;color:var(--muted);font-size:.85rem}.select-row select{width:100%;margin-top:5px;padding:10px 11px;border:1px solid var(--line);border-radius:10px;background:var(--panel2);color:var(--text)}
+    .controls{display:flex;flex-wrap:wrap;gap:9px;margin-top:16px}.btn{padding:10px 13px;border-radius:10px;background:var(--panel2);font-weight:750}.btn.primary{background:var(--purple)}.btn.green{background:#187c5c}.btn.red{background:#8f3044}.btn:disabled{opacity:.4;cursor:not-allowed}.select-row label{display:block;max-width:300px;color:var(--muted);font-size:.85rem}.select-row select,.select-row input[type=text]{width:100%;margin-top:5px;padding:10px 11px;border:1px solid var(--line);border-radius:10px;background:var(--panel2);color:var(--text);font:inherit}
     .flow{display:grid;grid-template-columns:repeat(4,1fr);gap:7px;margin:0 0 17px}.flow div{padding:8px 5px;border-radius:9px;background:var(--panel2);color:var(--muted);font-size:.75rem;text-align:center}.flow .on{background:#8065ff35;color:var(--text);outline:1px solid var(--purple)}
     .group{padding:14px;margin:10px 0;border:1px solid var(--line);border-radius:12px;background:var(--panel2)}.group-top{display:flex;justify-content:space-between;gap:10px}.group-meta{color:var(--muted);font-size:.83rem}.members{display:grid;gap:7px;margin-top:11px}.member{display:flex;align-items:center;gap:9px;padding:8px 10px;border-radius:9px;background:#0002}.avatar{display:grid;place-items:center;width:30px;height:30px;border-radius:50%;background:#40366f}.member small{display:block;color:var(--muted);font-size:.77rem}.empty{padding:22px;border:1px dashed var(--line);border-radius:11px;color:var(--muted);text-align:center}
     .staff-actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}.status-box{padding:13px;border-radius:11px;background:var(--panel2)}.status-box strong{display:block}.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px}.stat{padding:11px;border-radius:10px;background:var(--panel2)}.stat strong{display:block;font-size:1.25rem}.stat span{color:var(--muted);font-size:.75rem}.log{list-style:none;padding:0;margin:0;max-height:230px;overflow:auto}.log li{padding:8px 0;border-bottom:1px solid var(--line);color:var(--muted);font-size:.84rem}.log li:last-child{border:0}.log time{margin-right:8px;color:var(--green);font-size:.75rem}.toast{position:fixed;right:16px;bottom:16px;padding:11px 14px;border-radius:11px;background:#193d37;border:1px solid #39d39a77;opacity:0;transform:translateY(8px);transition:.2s;pointer-events:none}.toast.show{opacity:1;transform:translateY(0)}
@@ -31,6 +31,8 @@
     <section class="panel"><div class="panel-head"><div><h2>Active groups</h2><div class="hint">Groups are created by scans; there is no table selection</div></div><span id="groupCount" class="badge">0 groups</span></div><div id="groups"></div></section>
 
     <section class="panel"><div class="panel-head"><div><h2>Staff view</h2><div class="hint">Staff sees the scanning member and completes checkout here</div></div><span class="badge yellow">STAFF</span></div><div class="stats"><div class="stat"><strong id="people">0</strong><span>active players</span></div><div class="stat"><strong id="openGroup">—</strong><span>open join group</span></div><div class="stat"><strong id="billed">฿0</strong><span>total billed</span></div></div><div id="staff" class="status-box">ยังไม่มีการสแกนล่าสุด</div></section>
+
+    <section class="panel"><div class="panel-head"><div><h2>Register NFC tag</h2><div class="hint">Staff register a physical card UID (PB-15)</div></div><span class="badge">STAFF</span></div><div class="select-row" style="max-width:420px"><label>Raw tag UID (uppercase hex)<input id="newUid" type="text" placeholder="04A3B2C1D4" autocomplete="off"></label></div><div class="select-row" style="max-width:420px"><label>Label (optional)<input id="newLabel" type="text" placeholder="e.g. Nut" autocomplete="off"></label></div><div class="controls"><button id="registerTag" class="btn green">💳 Register tag</button></div></section>
 
     <section class="panel"><div class="panel-head"><div><h2>Activity log</h2><div class="hint">Server-side events represented in the demo</div></div></div><ul id="log" class="log"></ul></section>
   </main>
@@ -127,7 +129,7 @@
         copy[2] = state.sync.detail || 'Could not connect to the backend.';
       } else if (screen === 'group' && scan) {
         copy[1] = 'Group ' + scan.groupId + ' roster';
-        copy[2] = 'Player ' + labelOf(scan.tagId) + ' is scanning · staff chooses checkout after payment.';
+        copy[2] = 'Player ' + ((state.sessions[scan.memberId] && state.sessions[scan.memberId].label) || labelOf(scan.tagId)) + ' is scanning · staff chooses checkout after payment.';
       } else if (screen === 'waiting' && openId) {
         copy[1] = 'Waiting for friends · ' + openId;
       } else if (screen === 'joined' && openId) {
@@ -177,7 +179,7 @@
     function groupHtml(state, group, scan) {
       const members = rosterOf(state, group).map(session => {
         const scanning = scan && scan.memberId === session.sessionId ? ' · 🔎 scanning' : '';
-        const name = labelOf(session.tagId);
+        const name = session.label || labelOf(session.tagId);
         return '<div class="member"><span class="avatar">' + esc(name) + '</span><div><strong>Player '
           + esc(name) + '</strong><small>' + minutesBetween(session.checkInMs, Date.now()) + ' min · since '
           + clock(session.checkInMs) + scanning + '</small></div></div>';
@@ -207,7 +209,7 @@
 
       if (nextKey !== staffKey) {
         staffKey = nextKey;
-        const name = esc(labelOf(session.tagId));
+        const name = esc(session.label || labelOf(session.tagId));
         $('staff').innerHTML = '<strong>🔎 Player ' + name + ' is scanning</strong>'
           + '<div class="hint">' + esc(group.groupId) + ' · individual <span id="billOne"></span> · whole group <span id="billAll"></span></div>'
           + '<div class="staff-actions"><button id="one" class="btn red">✅ Check out Player ' + name + '</button>'
@@ -282,6 +284,18 @@
     $('dismiss').onclick = () => dispatch({ type: 'dismiss' });
     $('reset').onclick = () => {
       if (confirm('Reset the demo? Audit entries are retained (CCA §26 retention).')) dispatch({ type: 'reset' });
+    };
+
+    $('registerTag').onclick = async () => {
+      const rawTagUid = $('newUid').value.trim();
+      if (!rawTagUid) { notify('⚠️ Enter a raw tag UID first'); return; }
+      const label = $('newLabel').value.trim() || null;
+      const result = await dispatch({ type: 'register-tag', rawTagUid, label });
+      if (result && !result.error) {
+        notify('💳 Tag registered · ' + (result.tagId || ''));
+        $('newUid').value = '';
+        $('newLabel').value = '';
+      }
     };
 
     NFCSync.subscribe(render);
