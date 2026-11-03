@@ -103,6 +103,11 @@ Use HTTPS at the deployment boundary; this MVP does not provide TLS termination.
 - `POST /api/v1/nfc-tags` registers a tag through the staff API. The raw UID is hashed for lookup and
   is never returned. Registering the same raw UID again returns the **existing** tag identity instead
   of minting a second one, so a repeated registration cannot orphan a live session.
+- `POST /api/v1/reader/nfc-tags` is the same idempotent registration, device-authenticated
+  (`X-Device-Key`): the reader registers a card it has read directly on the device, so staff do not
+  need a laptop + curl. Audited as `actor: device`. **Production note:** the reader is physically
+  customer-accessible, so on-board registration should be gated behind a staff PIN/role — the device
+  key is the shared secret already trusted for `POST /scans`.
 - `POST /api/v1/scans` accepts a device-authenticated raw UID and returns `waiting`, `joined`, `group`,
   or an error according to `docs/api-contract.md`.
 - `POST /api/v1/reader/dismiss` clears the ephemeral join window.

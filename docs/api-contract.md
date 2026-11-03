@@ -365,6 +365,31 @@ ESP32 devices in the field can't always be re-flashed immediately. Within a majo
 existing `screen` value or rename a field firmware already parses. A breaking change to this contract
 requires `/api/v2` and a firmware update rollout plan, not a silent change to `v1`.
 
+### 3.5 `POST /api/v1/reader/nfc-tags` — on-device NFC registration
+
+Staff can register a physical card directly on the reader instead of going through the staff web app:
+the firmware reads a UID in its **Register card** mode and POSTs it here, device-authenticated
+(`X-Device-Key`). The endpoint mirrors `POST /api/v1/nfc-tags` (§4.1): the raw UID is HMAC-peppered
+and never returned, and re-registering the same UID returns the existing identity (idempotent).
+
+```json
+POST /api/v1/reader/nfc-tags
+{ "rawTagUid": "04A3B2C1D4" }
+```
+
+```json
+→ 201
+{ "data": { "tagId": "tag_4b21e0", "label": null, "status": "active" } }
+```
+
+The firmware stores a read UID locally (NVS) until the backend confirms registration, so a card read
+while the reader is offline is registered on the next boot before the reader serves taps.
+
+> **Security note:** the reader is physically customer-accessible, so this path trusts the shared
+> `X-Device-Key` (already trusted for `POST /scans`). In production, on-board registration should be
+> gated behind a staff PIN/session rather than reachable by any passer-by. The audit actor is
+> `device`, not a staff identity, until that hardening lands.
+
 ## 4. Frontend ⇄ Backend contract
 
 ### 4.1 REST — endpoint catalog
@@ -638,6 +663,7 @@ WSS /ws/reader
 |---|---|
 | Scan contract & join-window rule (§3.1) | PB-01, PB-11 |
 | Reader push channel (§3.2) | PB-02, PB-12, PB-13 |
+| On-device NFC registration (§3.5) | PB-15 |
 | Admin WebSocket (§4.2) — table-mapping gap noted | PB-14 |
 | REST catalog (§4.1) | PB-02–PB-04, PB-08–PB-10, PB-12, PB-13, PB-15 |
 
