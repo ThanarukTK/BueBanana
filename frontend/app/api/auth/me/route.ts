@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { readLegacyToken, readSession } from '@/lib/staff-auth';
+import { createSession, readLegacyToken, readSession, verifyStaffCredentials } from '@/lib/staff-auth';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -13,6 +13,37 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(
       { data: { staff: { staffId: session.staffId, username: session.username, displayName: session.displayName, role: session.role } } },
       { headers: { 'Cache-Control': 'no-store' } },
+    );
+  }
+
+  // Test convenience: issue the configured static staff session on first visit.
+  // Production hosting must opt in explicitly; credentials remain server-side.
+  const autoLoginEnabled = process.env.NODE_ENV === 'development'
+    ? process.env.AUTO_LOGIN_DEV === 'true'
+    : process.env.NODE_ENV === 'production' && process.env.AUTO_LOGIN_STAFF === 'true';
+  if (autoLoginEnabled) {
+    const identity = verifyStaffCredentials(
+      process.env.STAFF_USERNAME?.trim() ?? '',
+      process.env.STAFF_PASSWORD ?? '',
+    );
+    const issued = identity ? createSession(identity) : null;
+    if (identity && issued) {
+      const output = NextResponse.json(
+        { data: { staff: { staffId: identity.staffId, username: identity.username, displayName: identity.displayName, role: identity.role } } },
+        { headers: { 'Cache-Control': 'no-store' } },
+      );
+      output.cookies.set(issued.name, issued.value, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+        path: '/',
+        maxAge: issued.maxAge,
+      });
+      return output;
+    }
+    return NextResponse.json(
+      { error: { message: 'ตรวจสอบการตั้งค่าบัญชีทดสอบใน frontend/.env.local' } },
+      { status: 503, headers: { 'Cache-Control': 'no-store' } },
     );
   }
 
