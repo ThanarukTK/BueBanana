@@ -34,6 +34,7 @@
 #include <XPT2046_Touchscreen.h>
 #include <WiFi.h>
 #include <HTTPClient.h>
+#include <WiFiClientSecure.h>
 #include <ArduinoJson.h>
 #include <Adafruit_PN532.h>
 #include <WebSocketsClient.h>
@@ -56,6 +57,7 @@ String configSSID, configPass, configUrl;
 
 // ---- Runtime state ----
 bool wifiOk = false, nfcOk = false, wsConnected = false, firstRun = false;
+bool readerReady = false;               // true once both NFC + Wi-Fi are up and taps are served
 String lastUid; unsigned long lastTapMs = 0;
 String lastApUid;                       // last UID read during softAP setup (for phone-page registration)
 bool checkInActive = false; unsigned long checkInUntil = 0;
@@ -459,29 +461,33 @@ static void runSettings(){
 // ===========================================================================
 // Boot "Tap to Configure" countdown
 // ===========================================================================
+// Boot "Tap & hold to Configure" — the gate into Settings is DELIBERATE: a quick
+// casual tap (e.g. a customer touching the screen) must never open the config menu.
+// Only a sustained ~3s press enters Settings. Any short touch just falls through
+// to normal reader boot. (On first run, setup() forces Settings anyway.)
+// ===========================================================================
 static void bootConfigScreen(){
+  const unsigned long HOLD_MS = 3000;
   for(int s=BOOT_CONFIG_TIMEOUT_S; s>0; s--){
     tft.fillScreen(TFT_BLACK);
     tft.setTextColor(TFT_YELLOW); tft.setTextSize(3);
-    tft.setCursor(20,30); tft.print("TAP SCREEN");
-    tft.setTextSize(2); tft.setCursor(20,70); tft.print("to Configure");
-    tft.setTextColor(TFT_WHITE); tft.setTextSize(2);
-    tft.setCursor(20,120); tft.print("Auto-start in ");
-    tft.setTextColor(TFT_CYAN); tft.print(String(s)+" s");
-    // progress bar
-    tft.fillRect(20,160,280,14,TFT_NAVY);
-    tft.fillRect(20,160,(int)(280.0*s/BOOT_CONFIG_TIMEOUT_S),14,TFT_CYAN);
+    tft.setCursor(20,30); tft.print("HOLD SCREEN");
+    tft.setTextSize(2); tft.setCursor(20,70); tft.print("3s to Configure");
+    tft.setTextColor(TFT_CYAN); tft.setTextSize(1);
+    tft.setCursor(20,120); tft.print("hold your finger on the screen");
+    tft.setTextSize(1); tft.setCursor(20,140); tft.print("(quick taps just start the reader)");
     tft.setTextColor(TFT_DARKGREY); tft.setTextSize(1);
-    tft.setCursor(20,190); tft.print("(or press RST anytime to return here)");
+    tft.setCursor(20,190); tft.print("Auto-start in ");
+    tft.setTextColor(TFT_CYAN); tft.print(String(s)+" s");
     unsigned long end=millis()+1000;
     bool prev=false;
     while(millis()<end){
       bool now=ts.touched();
-      if(now && !prev){                 // rising edge = a deliberate fresh press
-        unsigned long d0=millis();
-        while(ts.touched()){ if(millis()-d0>500) break; delay(5); } // bounded release
-        runSettings();
-        return;
+      if(now && !prev){                     // rising edge: a press began this window
+        unsigned long d0=millis(); bool heldLong=false;
+        while(ts.touched()){ if(millis()-d0>HOLD_MS){ heldLong=true; break; } delay(5); }
+        if(heldLong){ runSettings(); return; } // held the full 3s -> Settings
+        // else: short tap -> just continue to normal boot
       }
       prev=now;
       delay(10);
@@ -513,19 +519,54 @@ static String uidToHex(const uint8_t* uid,uint8_t len){
   for(uint8_t i=0;i<len;i++){ snprintf(b,sizeof(b),"%02X",uid[i]); s+=b; }
   return s;
 }
+// ---- friendly warm palette (cafe-kiosk look; RGB565) ----
+static const uint16_t C_BG   = 0x20E3;   // warm dark background
+static const uint16_t C_CARD = 0x3985;   // warm panel
+static const uint16_t C_CARD2= 0x49E7;   // lighter panel
+static const uint16_t C_GOLD = 0xF62B;   // amber accent
+static const uint16_t C_MINT = 0x4E74;   // soft green (success)
+static const uint16_t C_ROSE = 0xEB90;   // soft rose (error)
+static const uint16_t C_WHITE= 0xFFDE;   // warm off-white
+static const uint16_t C_MUT  = 0xAD12;   // muted text
+static const uint16_t C_HEAD = 0x18A2;   // header bar
+
+// rounded "card" panel
+static void drawCard(int x0,int y0,int x1,int y1,uint16_t c){
+  tft.fillRoundRect(x0,y0,x1-x0,y1-y0,8,c);
+}
+// centered text at a baseline y (GLCD font, uses textWidth)
+static void centerText(const char* s,uint16_t c,int size,int y){
+  tft.setTextColor(c); tft.setTextSize(size);
+  tft.setCursor((320-(int)tft.textWidth(s))/2, y);
+  tft.print(s);
+}
 static void drawFooter(){
-  tft.setTextColor(TFT_DARKGREY); tft.setTextSize(1);
-  tft.setCursor(10,222); tft.println("tap screen to dismiss");
+  tft.setTextColor(C_MUT); tft.setTextSize(1);
+  tft.setCursor(96,226); tft.print("tap screen to go back");
 }
 static void startCheckInWindow(){          // keep check-in screen for the backend join window
   checkInActive = true;
   checkInUntil = millis() + JOIN_WINDOW_MS;
 }
 static void showIdle(){
-  tft.fillScreen(TFT_BLACK);
-  tft.setTextColor(TFT_WHITE); tft.setTextSize(2);
-  tft.setCursor(10,10); tft.println("Tap your card");
-  drawFooter();
+  tft.fillScreen(C_BG);
+  // top bar
+  tft.fillRect(0,0,320,26,C_HEAD);
+  tft.setTextColor(C_GOLD); tft.setTextSize(1);
+  tft.setCursor(12,9); tft.print("BOARD GAME CAFE");
+  tft.setTextColor(C_MUT); tft.setCursor(258,9); tft.print("open");
+  // hero
+  centerText("READY TO", C_WHITE, 3, 58);
+  centerText("PLAY!", C_GOLD, 3, 88);
+  tft.fillRoundRect(120,118,80,3,2,C_CARD2);      // divider
+  // action card
+  drawCard(36,132,284,180,C_CARD);
+  centerText("Tap your card", C_MINT, 2, 148);
+  centerText("to start your session", C_MUT, 1, 166);
+  // pricing / help card
+  drawCard(36,188,284,230,C_CARD2);
+  centerText("B 30 / hr   first 30 min free", C_GOLD, 1, 200);
+  centerText("Need a card? Ask our staff", C_MUT, 1, 218);
 }
 
 // Show a countdown for `secs`, then return to the idle "Tap your card" screen.
@@ -544,14 +585,57 @@ static void holdThenIdle(int secs){
   showIdle();
 }
 
+// ===========================================================================
+// Audio feedback (optional) — BUZZER_PIN in config.h. Success = rising two-tone,
+// error = low buzz. All calls are no-ops when BUZZER_PIN < 0 (no speaker wired).
+// ===========================================================================
+// The CYD-2432S028 speaker runs off the ESP32's INNER 8-bit DAC: GPIO 26 = DAC2 feeding
+// the on-board mono amp (analog output, NOT a PWM/tone pin). tone() (LEDC PWM) is silent
+// here — beeps must be generated as a DAC square wave via dacWrite().
+static void dacBeep(int freq, unsigned long durMs){
+  if(BUZZER_PIN < 0) return;
+  const int HI = 200, LO = 60;                         // 8-bit DAC swing
+  const unsigned long halfUs = 1000000UL / (unsigned long)(freq * 2);
+  unsigned long end = millis() + durMs;
+  while(millis() < end){
+    dacWrite(BUZZER_PIN, HI); delayMicroseconds(halfUs);
+    dacWrite(BUZZER_PIN, LO); delayMicroseconds(halfUs);
+  }
+  dacWrite(BUZZER_PIN, 0);                             // silence after the tone
+}
+static void audioOk(){
+  if(BUZZER_PIN < 0) return;
+  dacBeep(2093, 90); delay(100);   // C7
+  dacBeep(2637, 160);              // E7
+}
+static void audioErr(){
+  if(BUZZER_PIN < 0) return;
+  dacBeep(220, 300);               // low buzz
+}
+static void audioCheckout(){
+  if(BUZZER_PIN < 0) return;
+  dacBeep(1568, 90); delay(100);   // G6
+  dacBeep(2093, 90); delay(100);   // C7
+  dacBeep(2637, 200);              // E7
+}
+static void audioScan(){
+  if(BUZZER_PIN < 0) return;
+  dacBeep(1568, 70);               // short G6 blip: instant "card read" feedback
+}
+
 static void renderError(const String& msg){
-  tft.fillScreen(TFT_BLACK);
-  tft.setTextColor(TFT_RED); tft.setTextSize(2);
-  tft.setCursor(10,10); tft.println("ERROR");
-  tft.setTextSize(1); tft.setCursor(10,40); tft.println(msg);
+  audioErr();
+  tft.fillScreen(C_BG);
+  centerText("Ooops", C_ROSE, 3, 44);
+  centerText("That didn't work", C_WHITE, 1, 82);
+  drawCard(20,104,300,176,C_CARD);
+  tft.setTextColor(C_MUT); tft.setTextSize(1);
+  tft.setCursor(40,124); tft.print("Please ask our staff for help.");
+  tft.setTextColor(C_GOLD); tft.setTextSize(1);
+  tft.setCursor(40,142); tft.print(String(msg).substring(0,42));
   checkInActive=false;
   drawFooter();
-  holdThenIdle(5);           // error -> countdown -> back to scanning
+  holdThenIdle(6);           // error -> countdown -> back to scanning
 }
 
 static void drawStatus(const char* top,const char* line,uint16_t c){
@@ -570,12 +654,17 @@ static void renderResponseJson(const String& body){
 
   // ---- check-out success (also shown after staff checks someone out) ----
   if(strcmp(screen,"success")==0){
+    audioCheckout();
     long amt=data["bill"]["amount"]|0L;
-    tft.fillScreen(TFT_BLACK);
-    tft.setTextColor(TFT_GREEN); tft.setTextSize(3); tft.setCursor(10,20); tft.println("CHECK-OUT OK");
-    tft.setTextColor(TFT_WHITE); tft.setTextSize(3); tft.setCursor(10,90);
-    tft.print("B "); tft.println(amt/100.0,2);
-    tft.setTextSize(1); tft.setCursor(10,150); tft.println("Thanks for playing!");
+    tft.fillScreen(C_BG);
+    centerText("ALL SET!", C_MINT, 3, 46);
+    centerText("Thanks for playing", C_WHITE, 1, 78);
+    drawCard(40,100,280,182,C_CARD);
+    tft.setTextColor(C_MUT); tft.setTextSize(1);
+    tft.setCursor(126,116); tft.print("YOUR BILL");
+    char bill[16]; snprintf(bill,sizeof(bill),"B %.2f",amt/100.0);
+    centerText(bill, C_GOLD, 3, 140);
+    centerText("See you next time!", C_MUT, 1, 198);
     drawFooter();
     checkInActive=false;
     holdThenIdle(6);         // check-out success -> countdown -> back to scanning
@@ -584,53 +673,85 @@ static void renderResponseJson(const String& body){
 
   // ---- check-in success: NEW group (first person) ----
   if(strcmp(screen,"waiting")==0){
-    tft.fillScreen(TFT_BLACK);
-    tft.setTextColor(TFT_GREEN); tft.setTextSize(3); tft.setCursor(10,20); tft.println("CHECKED IN");
-    tft.setTextColor(TFT_WHITE); tft.setTextSize(1); tft.setCursor(10,90);
-    tft.println("You started a table (1 so far).");
+    audioOk();
+    tft.fillScreen(C_BG);
+    centerText("WELCOME!", C_MINT, 3, 46);
+    centerText("You started a table", C_WHITE, 2, 78);
+    drawCard(16,106,304,176,C_CARD);
+    centerText("You're the 1st player", C_GOLD, 2, 128);
+    centerText("Friends: tap a card now", C_MUT, 1, 154);
     drawFooter(); startCheckInWindow(); return;
   }
 
   // ---- check-in success: joined an existing open group ----
   if(strcmp(screen,"joined")==0){
+    audioOk();
     int n = data["tags"].size();
-    tft.fillScreen(TFT_BLACK);
-    tft.setTextColor(TFT_GREEN); tft.setTextSize(3); tft.setCursor(10,20); tft.println("CHECKED IN");
-    tft.setTextColor(TFT_WHITE); tft.setTextSize(2); tft.setCursor(10,90);
-    tft.print("You're at the table: ");
-    tft.print(n); tft.print(" person"); if(n!=1) tft.print("s");
+    tft.fillScreen(C_BG);
+    centerText("YOU'RE IN!", C_MINT, 3, 46);
+    char line[32]; snprintf(line,sizeof(line),"At the table: %d player%s",n,(n!=1)?"s":"");
+    centerText(line, C_WHITE, 2, 78);
+    drawCard(16,106,304,176,C_CARD);
+    centerText("Tell friends to tap now", C_GOLD, 2, 128);
+    centerText("to join this table", C_MUT, 1, 154);
     drawFooter(); startCheckInWindow(); return;
   }
 
   // ---- re-scan of someone already checked in -> roster with labels + who is scanning ----
   if(strcmp(screen,"group")==0){
+    audioOk();
     JsonArray tags = data["tags"].as<JsonArray>();
     int n = tags.size();
     const char* scanId = data["tagId"] | "";
-    tft.fillScreen(TFT_BLACK);
-    tft.setTextColor(TFT_CYAN); tft.setTextSize(2); tft.setCursor(8,6);
-    tft.print("IN GROUP  "); tft.print(n); tft.print(" player"); if(n!=1) tft.print("s");
-    int y=34;
+    tft.fillScreen(C_BG);
+    // header bar
+    tft.fillRect(0,0,320,26,C_HEAD);
+    tft.setTextColor(C_GOLD); tft.setTextSize(1); tft.setCursor(12,9);
+    tft.print("YOUR TABLE");
+    char cnt[18]; snprintf(cnt,sizeof(cnt),"%d player%s",n,(n!=1)?"s":"");
+    tft.setTextColor(C_MINT); tft.setTextSize(1); tft.setCursor(230,9); tft.print(cnt);
+    // rows: highlighted member = the one who just tapped
+    int y=40;
     for(JsonObject t : tags){
       const char* lbl = t["label"] | "";
       const char* tid = t["tagId"] | "";
       bool scanning = (scanId[0] && strcmp(tid,scanId)==0);
-      tft.setTextColor(scanning ? TFT_YELLOW : TFT_WHITE);
-      tft.setTextSize(1); tft.setCursor(12,y);
+      long amtS = t["amountSatang"] | -1L;          // backend-priced, so no local clock to trust
+      drawCard(10,y,310,y+26, scanning ? C_GOLD : C_CARD);   // scanning member = gold card
+      tft.setTextColor(scanning ? C_HEAD : C_WHITE); tft.setTextSize(1);
+      tft.setCursor(20,y+9);
       if(lbl[0]) tft.print(lbl);
       else { tft.print("card "); tft.print(String(tid).substring(0,6)); }
-      if(scanning) tft.print("   <-- scanning");
-      y+=17;
-      if(y>196) break;
+      if(scanning) tft.print("  <- you");
+      // estimated elapsed time (฿0.50/min -> ~minutes) + current bill, right-aligned
+      if(amtS>=0){
+        long mins = amtS/50;
+        tft.setTextColor(scanning ? C_HEAD : C_GOLD);
+        tft.setCursor(206,y+9);
+        tft.print(mins); tft.print("m  B"); tft.print(amtS/100.0,2);
+      }
+      y+=34;
+      if(y > 192) break;
     }
     drawFooter(); startCheckInWindow(); return;
   }
 
   if(strcmp(screen,"idle")==0) { showIdle(); return; }
 }
+static WiFiClientSecure secureClient;                 // for HTTPS backend (deployed Render)
+
+// Does the configured base URL use TLS (https / wss)?
+static bool useTLS(){ return String(configUrl).startsWith("https://"); }
+
+// begin() an HTTPClient on plain HTTP or over the secure client (https).
+static void httpBegin(HTTPClient& http, const String& url){
+  if(useTLS()) http.begin(secureClient, url);
+  else         http.begin(url);
+}
+
 static void sendScan(const String& uidHex){
   HTTPClient http;
-  http.begin(String(configUrl)+"/api/v1/scans");
+  httpBegin(http, String(configUrl)+"/api/v1/scans");
   http.setTimeout(5000);                       // cloud/DB round-trips spike above 1.5s; a short timeout showed "-11" after the write already committed
   http.addHeader("Content-Type","application/json");
   http.addHeader("X-Device-Key",DEVICE_KEY);
@@ -645,11 +766,44 @@ static void sendDismiss(){
   showIdle();
   // Best-effort: clear the server's open join window (short timeout so a slow link can't stall the loop).
   HTTPClient http;
-  http.begin(String(configUrl)+"/api/v1/reader/dismiss");
+  httpBegin(http, String(configUrl)+"/api/v1/reader/dismiss");
   http.setTimeout(1000);
   http.addHeader("Content-Type","application/json");
   http.addHeader("X-Device-Key",DEVICE_KEY);
   http.POST("{}"); http.end();
+}
+// ===========================================================================
+// Backend reachability — Wi-Fi UP is NOT the same as "the backend answers".
+// These probe the API over an actual HTTP round-trip so the reader only serves
+// taps / reports READY when it can genuinely talk to the backend, and it
+// surfaces a dead backend instead of silently letting every tap error out.
+// ===========================================================================
+static bool backendOk = false;
+static unsigned long backendProbeAt = 0;
+static const unsigned long BACKEND_PROBE_UP_MS   = 10000;  // slow re-check while healthy
+static const unsigned long BACKEND_PROBE_DOWN_MS = 3000;   // fast retry while unreachable
+// One HTTP GET /health round-trip — true only if the backend really responds (not just Wi-Fi).
+static bool backendReachable(){
+  if(!wifiOk) return false;
+  HTTPClient http;
+  httpBegin(http, String(configUrl)+"/health");
+  http.setTimeout(1500);
+  int code=http.GET();
+  http.end();
+  return (code>=200 && code<300);
+}
+// Scheduled probe caller (from startReader + reconnectLoop). Flips backendOk when
+// reachability changes, so a wrong/dead backend URL is caught and reported instead
+// of the board sitting on "Ready" while taps fail.
+static void backendTick(){
+  unsigned long interval = backendOk ? BACKEND_PROBE_UP_MS : BACKEND_PROBE_DOWN_MS;
+  if(millis() < backendProbeAt) return;
+  backendProbeAt = millis() + interval;
+  bool reachable = backendReachable();
+  if(reachable != backendOk){
+    backendOk = reachable;
+    Serial.println(reachable ? "BACKEND OK" : "BACKEND LOST");
+  }
 }
 static void pollReaderState(){
   if(!wifiOk) return;
@@ -657,7 +811,7 @@ static void pollReaderState(){
   if(millis()-lastPoll<2000) return;      // at most every 2s, so the loop stays free to poll touch
   lastPoll=millis();
   HTTPClient http;
-  http.begin(String(configUrl)+"/api/v1/reader/state?deviceKey="+String(DEVICE_KEY));
+  httpBegin(http, String(configUrl)+"/api/v1/reader/state?deviceKey="+String(DEVICE_KEY));
   http.setTimeout(1200);                   // don't freeze the loop (and touch) for 5s when the socket is down
   int code=http.GET(); if(code==200) renderResponseJson(http.getString());
   http.end();
@@ -671,7 +825,10 @@ void wsEvent(WStype_t type,uint8_t* payload,size_t len){
   }
 }
 static void pollNfc(){
-  if(!nfcOk) return;
+  // Only serve taps when the board can ACTUALLY talk to the backend (not just Wi-Fi).
+  // If the backend is unreachable, reconnectLoop() is showing the recovery screen; reading
+  // cards here would only produce silent HTTP failures.
+  if(!nfcOk || !backendOk) return;
   uint8_t uid[]={0,0,0,0,0,0,0}; uint8_t uidLen=0;
   if(!nfc.readPassiveTargetID(PN532_MIFARE_ISO14443A,uid,&uidLen,100)) return;  // short wait: a 500ms block made the loop sample touch only ~2x/s and swallow taps
   String hex=uidToHex(uid,uidLen);
@@ -679,6 +836,7 @@ static void pollNfc(){
   Serial.print("Tap UID: "); Serial.println(hex);
   unsigned long now=millis();
   if(hex==lastUid && (now-lastTapMs)<SCAN_DEDUPE_MS) return;
+  audioScan();          // instant beep the moment a card is read (before the HTTP round-trip)
   // Immediate feedback: the moment a card is read, say we're talking to the backend —
   // otherwise the screen looks frozen while the POST round-trip is in flight.
   tft.fillScreen(TFT_BLACK);
@@ -740,8 +898,26 @@ static void connectWifi(){
   WiFi.begin(configSSID.c_str(), configPass.c_str());
 }
 static void wifiTick(){
-  if(wifiOk) return;
-  if(WiFi.status()==WL_CONNECTED){ wifiOk=true; Serial.print("IP: "); Serial.println(WiFi.localIP()); }
+  // Live bidirectional monitor (was a one-way latch): also clears the flags when the link drops
+  // after a successful connect, so reconnectLoop() re-triggers a reconnect instead of trusting a
+  // stale "connected" state.
+  if(WiFi.status()==WL_CONNECTED){
+    if(!wifiOk){ wifiOk=true; Serial.print("IP: "); Serial.println(WiFi.localIP()); }
+  } else if(wifiOk){
+    wifiOk=false; wsConnected=false; readerReady=false;
+  }
+}
+// NFC presence heartbeat: readPassiveTargetID() cannot tell "no card in field" from "module gone",
+// so probe the PN532 firmware every NFC_PROBE_MS (idle only) and clear nfcOk when it stops answering.
+// reconnectLoop() then re-runs initNfc() (Wire.begin + nfc.begin + SAMConfig) to revive it.
+static void nfcWatch(){
+  if(!nfcOk) return;                       // already down: reconnectLoop() handles re-init
+  static unsigned long nfcProbeAt = 0;
+  if(millis() >= nfcProbeAt){
+    nfcProbeAt = millis() + NFC_PROBE_MS;
+    if(checkInActive) return;              // don't disturb an open join window with a probe
+    if(nfc.getFirmwareVersion() == 0) nfcOk = false;
+  }
 }
 
 // ===========================================================================
@@ -802,7 +978,7 @@ static void removePendingReg(const String& uid){
 // True on 2xx.
 static bool postRegisterTag(const String& uid,const char* label=NULL){
   HTTPClient http;
-  http.begin(String(configUrl)+"/api/v1/reader/nfc-tags");
+  httpBegin(http, String(configUrl)+"/api/v1/reader/nfc-tags");
   http.setTimeout(5000);
   http.addHeader("Content-Type","application/json");
   http.addHeader("X-Device-Key",DEVICE_KEY);
@@ -948,7 +1124,6 @@ static void registerCardMode(){
 // Reader bring-up with self-healing: keeps trying to (re)connect the scan
 // module and the backend every 5s until both are up, then serves taps. Any
 // later loss is handled from loop() (see reconnectLoop()).
-static bool readerReady = false;
 static void startReader(){
   tft.fillScreen(TFT_BLACK);
   tft.setTextColor(TFT_WHITE); tft.setTextSize(2); tft.setCursor(10,10); tft.println("Starting reader...");
@@ -960,13 +1135,14 @@ static void startReader(){
     // ---- backend: reconnect every 5s until it answers ----
     if(!wifiOk && millis()>=netRetryAt){ netRetryAt=millis()+5000; connectWifi(); }
     wifiTick();
+    backendTick();       // READY requires the backend to actually answer, not just Wi-Fi
 
-    if(nfcOk && wifiOk){
+    if(nfcOk && wifiOk && backendOk){
       Serial.print("IP: "); Serial.println(WiFi.localIP());
       tft.fillScreen(TFT_BLACK);
       tft.setTextColor(TFT_GREEN); tft.setTextSize(2); tft.setCursor(10,10); tft.println("NFC OK");
       tft.setTextColor(TFT_WHITE); tft.setTextSize(1);
-      tft.setCursor(10,40); tft.print("Wi-Fi OK  IP: "); tft.println(WiFi.localIP());
+      tft.setCursor(10,40); tft.print("Backend OK  IP: "); tft.println(WiFi.localIP());
       delay(1200);
 
       // Data sync: register locally-saved cards before serving taps.
@@ -991,6 +1167,12 @@ static void startReader(){
       tft.setTextColor(TFT_RED); tft.setTextSize(2);
       tft.setCursor(10,y);   tft.println("Cannot connect to");
       tft.setCursor(10,y+22);tft.println("backend - retry 5s");
+      y+=56;
+    }
+    if(!backendOk && wifiOk){
+      tft.setTextColor(TFT_RED); tft.setTextSize(2);
+      tft.setCursor(10,y);   tft.println("Cannot reach");
+      tft.setCursor(10,y+22);tft.println("backend API - retry");
     }
     tft.setTextColor(TFT_DARKGREY); tft.setTextSize(1);
     tft.setCursor(10,200); tft.println("RST to configure");
@@ -999,14 +1181,20 @@ static void startReader(){
   }
 
   // ---- WebSocket link (non-blocking; retries via reconnectLoop) ----
+  // Parse host + port correctly from the base URL, then pick ws / wss.
   String u=String(configUrl); bool tls=u.startsWith("https://");
-  String h=u; h.replace("http://",""); h.replace("https://","");
-  int colon=h.indexOf(':'); int slash=h.indexOf('/');
-  if(colon>0 && (slash==-1||colon<slash)) h=h.substring(0,colon);
-  uint16_t port=tls?443:80;
+  u.replace("http://",""); u.replace("https://","");
+  int slash=u.indexOf('/');
+  String hostport=(slash>=0)?u.substring(0,slash):u;
+  String h; int port;
+  int c=hostport.indexOf(':');
+  if(c>=0){ h=hostport.substring(0,c); port=hostport.substring(c+1).toInt(); }
+  else    { h=hostport; port=tls?443:80; }
   String path="/ws/reader?deviceKey="+String(DEVICE_KEY);
-  ws.begin(h.c_str(),port,path.c_str());
+  if(tls) ws.beginSSL(h.c_str(),port,path.c_str());   // no CA -> lib calls setInsecure()
+  else    ws.begin(h.c_str(),port,path.c_str());
   ws.onEvent(wsEvent); ws.setReconnectInterval(2000);
+  ws.enableHeartbeat(15000, 60000, 5000);   // keepalive: ping 15s, consider dead after 60s, check 5s
 }
 
 // Self-healing from loop(): if the scan module or the backend drops during normal
@@ -1014,8 +1202,16 @@ static void startReader(){
 // serving taps once both are back.
 static unsigned long reconnectAt=0;
 static void reconnectLoop(){
+  // Live link monitoring FIRST: flips the latched wifiOk / nfcOk back off when a link that was up
+  // drops, so the recovery branches below stay reachable after boot (previously these flags were
+  // one-way latches, so a post-boot drop was never detected or reconnected).
+  wifiTick();
+  nfcWatch();
+  backendTick();      // READY requires the backend to actually answer (not just Wi-Fi)
+
   bool nfcDown = !nfcOk;
   bool netDown = !wifiOk;
+  bool backendDown = !backendOk;
 
   // Re-attempt the scan module every 5s.
   if(nfcDown && millis()>=reconnectAt){
@@ -1026,10 +1222,10 @@ static void reconnectLoop(){
   if(netDown && millis()>=reconnectAt+500){
     connectWifi();
   }
-  wifiTick();
+  // backendTick() handles the backend re-probe when Wi-Fi is up but the API is down.
 
   // Recovered (fresh read): resume normal operation.
-  if(nfcOk && wifiOk){
+  if(nfcOk && wifiOk && backendOk){
     if(!readerReady){ readerReady=true; showIdle(); }
     return;
   }
@@ -1048,6 +1244,12 @@ static void reconnectLoop(){
     tft.setTextColor(TFT_RED); tft.setTextSize(2);
     tft.setCursor(10,y);   tft.println("Cannot connect to");
     tft.setCursor(10,y+22);tft.println("backend - retry 5s");
+    y+=56;
+  }
+  if(backendDown && wifiOk){
+    tft.setTextColor(TFT_RED); tft.setTextSize(2);
+    tft.setCursor(10,y);   tft.println("Cannot reach");
+    tft.setCursor(10,y+22);tft.println("backend API - retry");
   }
   delay(1000);
 }
@@ -1056,11 +1258,14 @@ void setup(){
   Serial.begin(SERIAL_BAUD);
   delay(200);
   tft.init(); tft.setRotation(1);
+  secureClient.setInsecure();   // allow connection to the deployed HTTPS backend (skip CA verify)
   touchSPI.begin(TOUCH_CLK, TOUCH_MISO, TOUCH_MOSI, TOUCH_CS);
   ts.begin(touchSPI);
   loadSettings();
   bootConfigScreen();       // countdown; tap -> Settings
   if(firstRun) runSettings();   // first boot: force config before running
+  WiFi.setSleep(false);        // reader is always-on: keep the radio responsive for WS keepalive
+  WiFi.setAutoReconnect(true); // native first-line reconnect; the manual watchdog below is the safety net
   startReader();
 }
 void loop(){

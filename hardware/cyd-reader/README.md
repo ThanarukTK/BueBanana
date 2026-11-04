@@ -22,6 +22,17 @@ backend exactly as `docs/api-contract.md` §3 and `docs/api-convention.md` descr
 > I2C is used because both of the CYD's SPI buses are consumed by the display
 > (HSPI: 12/13/14/15/2) and touch (25/32/33/36/39), and the SD slot is on VSPI.
 
+## Buzzer (audio feedback)
+**No external wiring needed** — GPIO 26 is the CYD-2432S028's **on-board speaker amplifier pin**
+(one of the amps' pins; some units route the speaker through a small 2-pin PicoBlade connector).
+Check your board has the speaker populated. The firmware beeps:
+- a short blip the instant a card is scanned (`audioScan`),
+- a rising two-tone on successful check-in (`audioOk`),
+- a three-note arpeggio on check-out (`audioCheckout`),
+- a low buzz on any error (`audioErr`).
+
+All audio is behind `BUZZER_PIN` in `config.h` (currently GPIO 26); set it to `-1` to disable.
+
 ## Libraries (Arduino Library Manager)
 - **Adafruit_PN532**
 - **TFT_eSPI** (Bodmer) — then overwrite its `User_Setup.h` with the
