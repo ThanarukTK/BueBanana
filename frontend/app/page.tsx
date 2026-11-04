@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
@@ -73,6 +73,7 @@ export default function Home() {
   const [authChecked, setAuthChecked] = useState(false);
   const [previewMode, setPreviewMode] = useState(false);
   const [groups, setGroups] = useState<Group[]>([]);
+  const groupsRef = useRef<Group[]>([]);
   const [reader, setReader] = useState<ApiEnvelope['reader']>();
   const [backendState, setBackendState] = useState<BackendState>('connecting');
   const [realtimeState, setRealtimeState] = useState<RealtimeState>('connecting');
@@ -133,6 +134,7 @@ export default function Home() {
       const result = await response.json() as ApiEnvelope;
       if (!response.ok) throw new Error(result.error?.message ?? 'โหลดข้อมูลจาก Backend ไม่สำเร็จ');
       if (!Array.isArray(result.data)) throw new Error('รูปแบบข้อมูลกลุ่มจาก Backend ไม่ถูกต้อง');
+      groupsRef.current = result.data;
       setGroups(result.data);
       setReader(result.reader);
       setBackendState('connected');
@@ -175,7 +177,7 @@ export default function Home() {
         setScan(nextScan);
         setPendingScanFocus(nextScan);
         setFilter('');
-        const scannedGroup = groups.find((group) => group.groupId === nextScan.groupId);
+        const scannedGroup = groupsRef.current.find((group) => group.groupId === nextScan.groupId);
         const existingMember = scannedGroup?.tags.find((member) =>
           member.sessionId === nextScan.sessionId || member.tagId === nextScan.scanningTagId,
         );
