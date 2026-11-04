@@ -1,18 +1,20 @@
 import { createHash } from 'node:crypto';
 
 export const RATE_PER_HOUR_SATANG = 3000;
-/** ฿30/hour in whole-hour blocks (Alurfia-style). */
+/** ฿30/hour in whole-hour blocks. */
 export const HOUR_MS = 3_600_000;
-/** ฿30 entry fee per person, charged on every bill. */
-export const ENTRY_SATANG = 3000;
-/** ฿150 all-day cap per person: `min(entry + hours × rate, allDay)`. */
+/**
+ * ฿150 cap per person = hour 5. Model: `bill = min(ceil(hours) × RATE, ALL_DAY)`.
+ * No separate entry fee — billing starts at hour 1 (฿30) and ends at hour 5 (฿150),
+ * after which nobody pays more no matter how long they stay.
+ */
 export const ALL_DAY_SATANG = 15000;
 /**
- * Billing follows the "Let me eat / Alurfia" model:
- *   bill = min(ENTRY + ceil(hours) × RATE, ALL_DAY)
- * whole-hour blocks (a 42-minute visit bills as 1 hour), no charge for a zero-duration
- * session, and the all-day cap means nobody pays more than ฿150 no matter how long they stay
- * (it bites at 4h: ฿30 + ฿30×4 = ฿150).
+ * Billing model (no entry fee, pure hourly with an all-day cap):
+ *   bill = min(ceil(hours) × RATE, ALL_DAY)
+ * whole-hour blocks (a 42-minute visit bills as 1 hour = ฿30), no charge for a zero-duration
+ * session, and the ฿150 cap means hour 5 is the maximum anyone pays (฿30×5 = ฿150), regardless
+ * of how much longer the party stays.
  */
 /** Kept for backward compatibility with the wire contract; the UI derives its copy from these. */
 export const RATE_PER_MINUTE_SATANG = RATE_PER_HOUR_SATANG / 60;
@@ -81,21 +83,20 @@ export function hashTagUid(rawTagUid: string): string {
 }
 
 /**
- * Bill for a duration, in satang: **Alurfia model** — ฿30 entry + ฿30/hour in whole-hour
- * blocks, capped at ฿150 all-day per person.
+ * Bill for a duration, in satang: **hourly only, no entry fee** — ฿30/hour in whole-hour
+ * blocks, capped at ฿150 (hour 5) per person.
  *
- *   bill = min(ENTRY_SATANG + ceil(duration / HOUR_MS) × RATE_PER_HOUR_SATANG, ALL_DAY_SATANG)
+ *   bill = min(ceil(duration / HOUR_MS) × RATE_PER_HOUR_SATANG, ALL_DAY_SATANG)
  *
  * A zero-duration session bills **0** (nothing elapsed, nothing owed). Any time at all rounds
- * up to a whole hour block, so a 42-minute visit bills ฿60 (entry + 1h). The all-day cap is
- * what makes a long session affordable: at 4 hours the bill hits ฿30 + ฿30×4 = ฿150 and stops
- * there — no matter how many hours the party stays.
+ * up to a whole hour block, so a 42-minute visit bills ฿30 (1 hour). The cap is what keeps a
+ * long session affordable: hour 5 is ฿30×5 = ฿150, and no amount of extra time raises it.
  */
 export function moneyForDurationMs(durationMs: number): number {
   const elapsed = Math.max(0, durationMs);
   if (elapsed === 0) return 0; // never played → nothing owed
   const hours = Math.ceil(elapsed / HOUR_MS);
-  return Math.min(ENTRY_SATANG + hours * RATE_PER_HOUR_SATANG, ALL_DAY_SATANG);
+  return Math.min(hours * RATE_PER_HOUR_SATANG, ALL_DAY_SATANG);
 }
 
 /** Bill for one session, priced server-side from the stored check-in time (never from a posted amount). */

@@ -292,20 +292,23 @@ describe('backend MVP', () => {
     expect(rejected.status).toBe(401);
   });
 
-  it('prices every bill Alurfia-style: ฿30 entry + ฿30/hour whole-hour blocks, ฿150 all-day cap', async () => {
+  it('prices every bill hourly: ฿30/hour whole-hour blocks starting at 1h, capped at ฿150 (hour 5)', async () => {
     // Zero duration → nothing owed (never played).
     expect(moneyForDurationMs(0)).toBe(0);
-    // Any time at all rounds up to one whole-hour block: entry + 1h = ฿60.
-    expect(moneyForDurationMs(1)).toBe(6000);           // ฿60.00
-    expect(moneyForDurationMs(60_000)).toBe(6000);      // ฿60.00 (1 minute)
-    expect(moneyForDurationMs(42 * 60_000)).toBe(6000); // ฿60.00 for 42 minutes (1h block)
-    // Exactly one hour: entry + 1h = ฿60.
-    expect(moneyForDurationMs(3_600_000)).toBe(6000);
-    // Just past an hour boundary → pays the next whole hour: entry + 2h = ฿90.
-    expect(moneyForDurationMs(3_600_001)).toBe(9000);   // ฿90.00
-    // The all-day cap bites at 4h: ฿30 + ฿30×4 = ฿150, and nothing beyond.
-    expect(moneyForDurationMs(4 * 3_600_000)).toBe(15000); // ฿150.00
-    expect(moneyForDurationMs(10 * 3_600_000)).toBe(15000); // ฿150.00 (capped all day)
+    // Any time at all rounds up to one whole-hour block: hour 1 = ฿30.
+    expect(moneyForDurationMs(1)).toBe(3000);           // ฿30.00
+    expect(moneyForDurationMs(60_000)).toBe(3000);      // ฿30.00 (1 minute)
+    expect(moneyForDurationMs(42 * 60_000)).toBe(3000); // ฿30.00 for 42 minutes (1h block)
+    // Exactly one hour: ฿30.
+    expect(moneyForDurationMs(3_600_000)).toBe(3000);
+    // Just past an hour boundary → pays the next whole hour: hour 2 = ฿60.
+    expect(moneyForDurationMs(3_600_001)).toBe(6000);   // ฿60.00
+    // Hour 3 = ฿90, hour 4 = ฿120.
+    expect(moneyForDurationMs(3 * 3_600_000)).toBe(9000);  // ฿90.00
+    expect(moneyForDurationMs(4 * 3_600_000)).toBe(12000); // ฿120.00
+    // The cap lands at hour 5: ฿30×5 = ฿150, and nothing beyond.
+    expect(moneyForDurationMs(5 * 3_600_000)).toBe(15000); // ฿150.00
+    expect(moneyForDurationMs(10 * 3_600_000)).toBe(15000); // ฿150.00 (capped at hour 5)
 
     const app = await makeApp();
     await registerCards(app, ['A']);
