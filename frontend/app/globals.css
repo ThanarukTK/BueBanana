@@ -1,0 +1,16 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root { color-scheme: light; --ink: #20221d; --muted: #898a80; --line: #ecece5; --paper: #f8f8f4; --green: #315b43; }
+* { box-sizing: border-box; }
+html { min-width: 360px; background: var(--paper); }
+body { margin: 0; color: var(--ink); font-family: Arial, "Noto Sans Thai", sans-serif; -webkit-font-smoothing: antialiased; }
+button, input { font: inherit; }
+button { cursor: pointer; }
+::selection { background: #dce9da; }
+.soft-shadow { box-shadow: 0 8px 30px rgba(30, 39, 28, .045); }
+.modal-backdrop { background: rgba(25, 30, 25, .38); backdrop-filter: blur(3px); }
+.scrollbar-none::-webkit-scrollbar { display: none; }
+.scrollbar-none { scrollbar-width: none; }
+@keyframes wave { 0%, 100% { transform: rotate(0); } 25% { transform: rotate(16deg); } 75% { transform: rotate(-8deg); } }
