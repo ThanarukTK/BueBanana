@@ -33,14 +33,18 @@
 
 /** ฿30 / hour, in satang (integers only — `docs/api-convention.md` §7). */
 export const RATE_PER_HOUR_SATANG = 3000;
-/** ฿0.50 a minute: the step the bill actually moves in (see `amountFor`). */
-export const RATE_PER_MINUTE_SATANG = RATE_PER_HOUR_SATANG / 60;
+/** Whole-hour billing block (Alurfia-style). */
+export const HOUR_MS = 3_600_000;
+/** ฿30 entry fee per person. */
+export const ENTRY_SATANG = 3000;
+/** ฿150 all-day cap per person: `min(entry + hours × rate, allDay)`. */
+export const ALL_DAY_SATANG = 15000;
 /**
- * There is **no minimum charge**, and the bill moves once a minute: ฿30/hour billed per started
- * minute. The backend prices it from its own stored check-in time and the demo only displays/confirms
- * that figure — nothing here invents a price.
+ * Alurfia model: bill = min(entry + whole-hour blocks × rate, all-day cap). The backend prices it
+ * from its own stored check-in time and the demo only displays/confirms that figure — nothing here
+ * invents a price, and this helper stays identical to `backend/src/domain.ts`.
  */
-export const BILLING_NOTE = '฿30/hour · ฿0.50 per started minute · priced server-side';
+export const BILLING_NOTE = '฿30 entry + ฿30/hour · ฿150 all-day · whole-hour blocks · priced server-side';
 /** How long a join window stays open after a tap (`docs/api-contract.md` §3.1). */
 export const JOIN_WINDOW_MS = 30000;
 /** Reader display timeout — mirrors the same 30s safety net. */
@@ -93,13 +97,17 @@ export const DEFAULT_READER = {
 export const baht = (satang) => '฿' + (Number(satang || 0) / 100).toFixed(2);
 
 /**
- * Same rule the backend applies (`backend/src/domain.ts`): ฿30/hour billed per **started minute**
- * (฿0.50 each), no minimum. Kept identical on purpose — the Firestore path and the REST path must
- * never disagree about a price, and only the backend's figure is ever accepted at check-out.
+ * Same rule the backend applies (`backend/src/domain.ts`): ฿30 entry + ฿30/hour in whole-hour
+ * blocks, capped at ฿150 all-day per person. Kept identical on purpose — the Firestore path and the
+ * REST path must never disagree about a price, and only the backend's figure is ever accepted at
+ * check-out. `members` multiplies the per-person bill for a whole-group preview.
  */
 export function amountFor(fromMs, toMs, members = 1) {
-  const minutes = Math.ceil(Math.max(0, toMs - fromMs) / 60000);
-  return minutes * RATE_PER_MINUTE_SATANG * members;
+  const elapsed = Math.max(0, toMs - fromMs);
+  if (elapsed === 0) return 0;
+  const hours = Math.ceil(elapsed / HOUR_MS);
+  const perPerson = Math.min(ENTRY_SATANG + hours * RATE_PER_HOUR_SATANG, ALL_DAY_SATANG);
+  return perPerson * members;
 }
 
 export function minutesBetween(fromMs, toMs) {

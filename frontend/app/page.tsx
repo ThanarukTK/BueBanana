@@ -341,7 +341,7 @@ export default function Home() {
         <Summary title="ยอดกำลังใช้งาน" value={backendState === 'connected' && reader ? money(reader.currentBillSatang) : '—'} icon="card" />
       </div>
 
-      <p className="mt-5 text-xs text-[#8a8f86]">คิดค่าบริการ ฿30 ต่อชั่วโมง · คำนวณและยืนยันยอดโดย Backend</p>
+      <p className="mt-5 text-xs text-[#8a8f86]">฿30 เข้าเล่น + ฿30/ชั่วโมง (คิดเป็นชั่วโมง) · สูงสุด ฿150/วัน/คน · คำนวณและยืนยันยอดโดย Backend</p>
     </div>
 
     {checkoutTarget && <CheckoutModal target={checkoutTarget} confirmed={checkoutConfirmed} busy={checkoutBusy} onConfirm={setCheckoutConfirmed} onClose={() => { if (!checkoutBusy) { setCheckoutTarget(null); setCheckoutConfirmed(false); } }} onSubmit={() => void submitCheckout()} />}

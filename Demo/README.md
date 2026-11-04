@@ -116,9 +116,9 @@ firebase emulators:start --project demo-nfc-cafe
 - No path ever stores a raw NFC UID: the demo's cards are synthetic (`DEMO-CARD-A` … on the REST path,
   `tag_A` … `tag_H` on the Firestore path) and carry no personal data, and audit entries record an
   internal tag id plus a random device id — never a name.
-- Billing is always ฿30/hour, per-minute, computed from the stored check-in time. In REST mode the
-  **server** computes it and the demo only displays/confirms it; in Firestore mode `amountFor()` uses
-  the identical rule.
+- Billing is Alurfia-style: ฿30 entry + ฿30/hour in whole-hour blocks, capped at ฿150 all-day per
+  person, computed from the stored check-in time. In REST mode the **server** computes it and the demo
+  only displays/confirms it; in Firestore mode `amountFor()` uses the identical rule.
 
 ## 🧱 Project structure
 
