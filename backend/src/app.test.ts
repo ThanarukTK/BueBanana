@@ -329,6 +329,36 @@ describe('backend MVP', () => {
     expect((await json(ok)).data.status).toBe('closed');
   });
 
+  it('closes the join window on check-out so a re-scanned card starts a fresh group', async () => {
+    // Drive the public API but assert the fix invariant on the repository directly, so the test is
+    // not subject to the response-streaming races this machine shows under `bun test`.
+    const repo = await testRepo();
+    const app = createApp({ repo, config });
+    await registerCards(app, ['A', 'B']);
+
+    const first = await json(await scan(app, 'A'));   // creates group G1
+    await scan(app, 'B');                               // B joins G1
+    const g1 = (await json(await groups(app))).data[0];
+    const firstGroupId = g1.groupId;
+    const memberA = g1.tags.find((t: any) => t.tagId === first.data.tagId)!;
+
+    // A pays and leaves; B stays, so the group remains active — the setup that used to let a
+    // re-scanned A card slip straight back into this old group through the stale join window.
+    const co = await confirm(app, `/api/v1/sessions/${memberA.sessionId}/check-out`, {
+      staffId: config.staffId, amount: memberA.amountSatang, customerConfirmed: true,
+    });
+    expect(co.status).toBe(200);
+
+    // Fix invariant: a check-out closes the join window, so a later tap cannot be absorbed back
+    // into this (still-active) group — it will start a fresh one instead.
+    const open = await repo.transaction((tx) => tx.openGroup());
+    expect(open).toBeNull();
+    // And the group itself is intact: A is gone, B remains.
+    const memberB = g1.tags.find((t: any) => t.tagId !== memberA.tagId)!;
+    const remaining = (await repo.transaction((tx) => tx.groupView(firstGroupId)))!;
+    expect(remaining?.members.map((m) => m.tag.tagId)).toEqual([memberB.tagId]);
+  }, 10_000);
+
   it('resets operational data but keeps the audit log and the tag identities', async () => {
     const app = await makeApp();
     await registerCards(app, ['A']);
@@ -444,6 +474,11 @@ describe('realtime channels (api-contract §3.2 / §4.2)', () => {
     const closed = admin.messages.filter((m) => m.event === 'session.closed');
     expect(closed.map((m) => m.data.sessionId).sort()).toEqual(group.tags.map((t: any) => t.sessionId).sort());
     expect(admin.messages.some((m) => m.event === 'group.updated' && m.data.status === 'closed')).toBe(true);
+
+    // After a successful live WebSocket delivery, the stored polling fallback must be gone, so the
+    // board is not told the same check-out a second time when its socket later drops.
+    const fallback = await fetch(`${base}/api/v1/reader/state`, { headers: deviceHeaders });
+    expect(fallback.status).toBe(204);
 
     reader.socket.close();
     admin.socket.close();

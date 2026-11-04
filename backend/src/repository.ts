@@ -67,6 +67,8 @@ export interface Transaction {
   saveReaderOutcome(outcome: ReaderOutcome): Promise<void>;
   /** Claim-once: whatever transport reads it first (socket or poll), the next read gets nothing. */
   claimReaderOutcome(): Promise<ReaderOutcome | null>;
+  /** Drop any pending reader outcome — used after a live WebSocket delivery so polling cannot replay it. */
+  clearReaderOutcome(): Promise<void>;
 
   // ---- audit (§8.2) and scan dedupe (§10) --------------------------------------------------
   appendAudit(entry: AuditInput): Promise<void>;

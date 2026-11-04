@@ -209,6 +209,10 @@ class PostgresTransaction implements Transaction {
     return row ? { groupId: row.group_id, payload: row.payload } : null;
   }
 
+  async clearReaderOutcome(): Promise<void> {
+    await this.tx`delete from reader_outcome where id = true`;
+  }
+
   // ---- audit & scan dedupe --------------------------------------------------------------------
 
   async appendAudit(entry: AuditInput): Promise<void> {

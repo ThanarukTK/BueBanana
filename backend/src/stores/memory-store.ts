@@ -159,6 +159,10 @@ export class MemoryStore implements Repository, Transaction {
     return claimed;
   }
 
+  async clearReaderOutcome(): Promise<void> {
+    this.readerOutcome = null;
+  }
+
   // ---- audit & scan dedupe --------------------------------------------------------------------
 
   async appendAudit(entry: AuditInput): Promise<void> {

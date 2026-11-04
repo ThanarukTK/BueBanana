@@ -21,11 +21,15 @@ type ServerLike = { publish?: (topic: string, data: string) => void } | null | u
  * `app.handle()` in tests, where no Bun server exists, and a channel with no subscribers is a no-op
  * in Bun anyway — so this never fails a request because nobody was listening.
  */
-export function publishTo(server: ServerLike, topic: string, payload: unknown): void {
+export function publishTo(server: ServerLike, topic: string, payload: unknown): number {
+  // Bun's Server.publish returns the number of clients the message was actually sent to, which
+  // lets callers know whether a live WebSocket delivery happened (used to clear the polling
+  // fallback so the reader is not told the same thing twice).
   try {
-    server?.publish?.(topic, JSON.stringify(payload));
+    return server?.publish?.(topic, JSON.stringify(payload)) ?? 0;
   } catch {
     /* no server (handle()) or no subscribers — a missed push is not a failed request */
+    return 0;
   }
 }
 

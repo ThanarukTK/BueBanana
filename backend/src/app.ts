@@ -341,6 +341,10 @@ export function createApp(options: AppOptions = {}) {
         if (body.amount !== amount) return { kind: 'mismatch' as const, amount };
         const checkOutTime = new Date(now).toISOString();
         const { closed, remaining } = await tx.detachSession(session.groupId, session.sessionId, checkOutTime);
+        // A paid member must not be re-absorbed into this group by the stale join window on their
+        // next tap — once anyone in the order pays, the tap-in window is closed; the next scan starts
+        // a fresh group (§3.1 join window is only for building one order).
+        if ((await tx.openGroup())?.groupId === session.groupId) await tx.setOpenGroup(null);
         const receipt = { amount, ratePerHour: RATE_PER_HOUR_SATANG, staffId, confirmedAt: checkOutTime, billVersion: 'rate-v1' };
         await tx.saveReceipt(session.sessionId, receipt);
         await tx.appendAudit({
@@ -366,10 +370,14 @@ export function createApp(options: AppOptions = {}) {
         });
       }
 
-      publishTo(server, READER_TOPIC, readerScreen({
-        screen: 'success', tagRemoved: outcome.tagId, groupId: outcome.groupId,
-      }));
       publishTo(server, ADMIN_TOPIC, sessionClosed(outcome.sessionId, outcome.groupId));
+      if (publishTo(server, READER_TOPIC, readerScreen({
+        screen: 'success', tagRemoved: outcome.tagId, groupId: outcome.groupId,
+      })) > 0) {
+        // The board was reached live over WebSocket — drop the stored polling fallback so it is not
+        // told the same check-out a second time when its socket later drops.
+        await repo.transaction((tx) => tx.clearReaderOutcome());
+      }
       publishTo(server, ADMIN_TOPIC, groupUpdated(outcome.view, now));
       return { data: { sessionId: outcome.sessionId, status: 'closed', receipt: outcome.receipt } };
     }, {
@@ -402,6 +410,9 @@ export function createApp(options: AppOptions = {}) {
 
         const checkOutTime = new Date(now).toISOString();
         const { closed } = await tx.closeGroup(params.groupId, checkOutTime);
+        // The whole order paid: closing its join window too, so the next scan starts a fresh group
+        // instead of re-opening this one via a stale window (same rule as individual check-out).
+        if ((await tx.openGroup())?.groupId === params.groupId) await tx.setOpenGroup(null);
         // Each member's receipt carries that member's own priced time, so the sum of receipts is the
         // money actually taken (and `GET /groups` can report `billedSatang` without a second ledger).
         for (const member of closed) {
@@ -441,9 +452,12 @@ export function createApp(options: AppOptions = {}) {
         amount: outcome.amount, ratePerHour: RATE_PER_HOUR_SATANG, staffId,
         confirmedAt: outcome.checkOutTime, billVersion: 'rate-v1',
       };
-      publishTo(server, READER_TOPIC, readerScreen({
+      if (publishTo(server, READER_TOPIC, readerScreen({
         screen: 'success', bill: { amount: outcome.amount, ratePerHour: RATE_PER_HOUR_SATANG }, groupId: outcome.groupId,
-      }));
+      })) > 0) {
+        // Board reached live — drop the stored polling fallback so it is not told twice.
+        await repo.transaction((tx) => tx.clearReaderOutcome());
+      }
       for (const member of outcome.closed) publishTo(server, ADMIN_TOPIC, sessionClosed(member.session.sessionId, outcome.groupId));
       publishTo(server, ADMIN_TOPIC, groupUpdated(outcome.view, now));
       return { data: { groupId: outcome.groupId, status: 'closed', receipt } };
