@@ -297,7 +297,6 @@ export default function Home() {
         setToast(`เช็กอินสำเร็จ · กลุ่ม ${result.data?.name ?? result.data?.groupId} · ${count} คน`);
         addActivity(`เช็กอินโหมดฉุกเฉิน · กลุ่ม ${result.data?.name ?? result.data?.groupId} · ${count} คน`, new Date().toISOString());
         await refresh();
-        window.setTimeout(() => setManualOpen(false), 600);
       } else {
         setToast(result.error?.message ?? 'เช็กอินโหมดฉุกเฉินไม่สำเร็จ');
       }
@@ -350,7 +349,7 @@ export default function Home() {
           </div>
           {backendState === 'connected' && activeGroups.length === 0
             ? <p className="px-5 py-14 text-center text-sm text-[#8b949e]">ไม่มีกลุ่มที่กำลังเล่น</p>
-            : <div className="divide-y divide-[#21262d]">{activeGroups.map((group) => <GroupCard key={group.groupId} group={group} scan={activeScan?.groupId === group.groupId ? activeScan : null} showCheckoutActions={Boolean(activeScan && checkoutScan?.groupId === group.groupId && checkoutScan.sessionId === activeScan.sessionId)} onCheckout={openCheckout} />)}</div>}
+            : <div className="divide-y divide-[#21262d]">{activeGroups.map((group) => <GroupCard key={group.groupId} group={group} scan={activeScan?.groupId === group.groupId ? activeScan : null} showCheckoutActions={manualOpen || Boolean(activeScan && checkoutScan?.groupId === group.groupId && checkoutScan.sessionId === activeScan.sessionId)} onCheckout={openCheckout} />)}</div>}
           {backendState === 'connecting' && <p className="px-5 py-14 text-center text-sm text-[#8b949e]">กำลังโหลดกลุ่มจาก Backend…</p>}
           {backendState === 'offline' && groups.length === 0 && <p className="px-5 py-10 text-center text-sm text-[#8b949e]">ยังไม่มีข้อมูลกลุ่ม · ระบบไม่แสดงข้อมูลตัวอย่าง</p>}
         </section>
