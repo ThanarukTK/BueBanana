@@ -1,4 +1,5 @@
 import WebSocket from 'ws';
+import { readLegacyToken, readSession } from '@/lib/staff-auth';
 import { NextRequest } from 'next/server';
 
 export const runtime = 'nodejs';
@@ -10,7 +11,7 @@ function unavailable(message: string, status: number) {
 
 export async function GET(request: NextRequest) {
   const apiBase = process.env.API_BASE_URL?.replace(/\/$/, '');
-  const token = request.cookies.get('buebanana_staff_session')?.value;
+  const token = readSession(request)?.apiToken || readLegacyToken(request);
   if (!token) return unavailable('กรุณาเข้าสู่ระบบพนักงาน', 401);
   if (!apiBase) return unavailable('ตั้งค่า API_BASE_URL ใน frontend/.env.local ก่อน', 503);
 

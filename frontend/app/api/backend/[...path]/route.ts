@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { listStaffAccounts, readLegacyToken, readSession } from '@/lib/staff-auth';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
-const SESSION_COOKIE = 'buebanana_staff_session';
 
 function error(message: string, status: number) {
   return NextResponse.json({ error: { message } }, { status });
@@ -18,11 +18,31 @@ function allowed(path: string, method: string) {
   return false;
 }
 
+const CHECK_OUT = /^api\/v1\/(groups\/[^/]+\/check-out|sessions\/[^/]+\/check-out)$/;
+
+/** Staff id for a Backend-issued JWT. Static test sessions carry it in the cookie instead. */
+async function backendStaffId(apiBase: string, token: string): Promise<string | null> {
+  try {
+    const response = await fetch(`${apiBase}/api/v1/auth/staff/me`, {
+      headers: { Authorization: `Bearer ${token}` },
+      cache: 'no-store',
+      signal: AbortSignal.timeout(8_000),
+    });
+    if (!response.ok) return null;
+    const payload = await response.json() as { data?: { staff?: { staffId?: string } } };
+    return payload.data?.staff?.staffId ?? null;
+  } catch {
+    return null;
+  }
+}
+
 async function forward(request: NextRequest, path: string[]) {
   const apiBase = process.env.API_BASE_URL?.replace(/\/$/, '');
-  const token = request.cookies.get(SESSION_COOKIE)?.value;
-  if (!apiBase) return error('ตั้งค่า API_BASE_URL ใน frontend/.env.local ก่อน', 503);
-  if (!token) return error('กรุณาเข้าสู่ระบบพนักงาน', 401);
+  const session = readSession(request);
+  const token = session?.apiToken || readLegacyToken(request);
+  if (!apiBase) return error('ตั้งค่า API_BASE_URL ใน frontend/.env ก่อน', 503);
+  if (!session && !token) return error('กรุณาเข้าสู่ระบบพนักงาน', 401);
+  if (session && !session.apiToken) return error('ยังไม่ได้ตั้งค่า STAFF_API_TOKEN ใน frontend/.env', 503);
 
   const joinedPath = path.join('/');
   if (!allowed(joinedPath, request.method)) return error('เส้นทางหรือ method นี้ไม่เปิดให้ proxy', 404);
@@ -32,14 +52,11 @@ async function forward(request: NextRequest, path: string[]) {
   let body: string | undefined;
   if (request.method === 'POST' || request.method === 'PATCH') {
     const incoming = await request.json().catch(() => ({})) as Record<string, unknown>;
-    if (/^api\/v1\/(groups\/[^/]+\/check-out|sessions\/[^/]+\/check-out)$/.test(joinedPath)) {
-      const me = await fetch(`${apiBase}/api/v1/auth/staff/me`, {
-        headers: { Authorization: `Bearer ${token}` }, cache: 'no-store', signal: AbortSignal.timeout(8_000),
-      });
-      if (!me.ok) return error('เซสชันหมดอายุ กรุณาเข้าสู่ระบบใหม่', 401);
-      const identity = await me.json() as { data?: { staff?: { staffId?: string } } };
-      if (!identity.data?.staff?.staffId) return error('ไม่พบข้อมูลบัญชีพนักงาน', 401);
-      body = JSON.stringify({ ...incoming, staffId: identity.data.staff.staffId });
+    if (CHECK_OUT.test(joinedPath)) {
+      // A static test session already knows the Backend staff id; a Backend JWT is resolved via /me.
+      const staffId = session?.apiStaffId ?? (token ? await backendStaffId(apiBase, token) : null);
+      if (!staffId) return error('เซสชันหมดอายุ กรุณาเข้าสู่ระบบใหม่', 401);
+      body = JSON.stringify({ ...incoming, staffId });
     } else {
       body = JSON.stringify(incoming);
     }
@@ -53,6 +70,16 @@ async function forward(request: NextRequest, path: string[]) {
       cache: 'no-store',
       signal: AbortSignal.timeout(8_000),
     });
+    if ((response.status === 404 || response.status === 405) && joinedPath.startsWith('api/v1/staff')) {
+      if (joinedPath === 'api/v1/staff' && request.method === 'GET') {
+        return NextResponse.json(
+          { data: { staff: listStaffAccounts() }, meta: { source: 'frontend/.env' } },
+          { headers: { 'Cache-Control': 'no-store' } },
+        );
+      }
+      return error('บัญชีพนักงานกำหนดจาก STAFF_ACCOUNTS ใน frontend/.env ในเฟสทดสอบ', 501);
+    }
+
     const text = await response.text();
     return new NextResponse(text, {
       status: response.status,

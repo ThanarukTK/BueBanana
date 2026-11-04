@@ -19,8 +19,10 @@ Create `frontend/.env.local` with the Backend URL:
 API_BASE_URL=https://buebanana.onrender.com
 ```
 
-The login route keeps the Backend's short-lived JWT in an HttpOnly cookie. The token is not exposed to
-browser JavaScript. `/api/backend/*` only forwards the documented staff endpoints, and the event
+The login route keeps the Backend's staff credential out of the browser: the console verifies the
+operator, then stores either the Backend's JWT (once its staff-account API exists) or a signed
+test-phase session in an HttpOnly cookie. Nothing in the token is readable by browser JavaScript.
+`/api/backend/*` only forwards the documented staff endpoints, and the event
 route bridges the authenticated `/ws/admin` WebSocket to a same-origin event stream. Group changes
 refresh immediately on events, with an eight-second REST refresh as a fallback.
 
@@ -33,6 +35,22 @@ Staff can view groups and check out members/groups. Admin can do those tasks plu
 change roles, and disable accounts. Both roles can view the audit API because the project rules define
 that endpoint as staff/admin-only. Admin account management is enforced by the Backend, not just hidden
 in the UI.
+
+## Test-phase staff sign-in
+
+The Backend still has no staff-account API (`POST /api/v1/auth/staff/login` returns 404), so the console
+signs staff in against a **static credential in `frontend/.env`** until that lands:
+
+- `STAFF_USERNAME` / `STAFF_PASSWORD` / `STAFF_DISPLAY_NAME` / `STAFF_ROLE`, or several accounts via
+  `STAFF_ACCOUNTS=user:password:role:display;...` (`role` is `admin` or `staff`).
+- A successful sign-in issues a **30-day, HMAC-signed, HttpOnly cookie** (`SESSION_SECRET`), so a
+  session survives reloads, browser restarts, and `next dev` restarts.
+- The Backend's own `STAFF_API_TOKEN` and `STAFF_ID` are read server-side from the same file and
+  attached to proxied calls and the `/ws/admin` handshake; they never reach the browser.
+- `/api/v1/staff` lists this directory; creating or editing accounts returns `501` until the Backend
+  exposes the account API. As soon as `POST /api/v1/auth/staff/login` answers, the login route prefers
+  it and the static directory is bypassed — no other change needed.
+- Swap point for the real identity service: `verifyStaffCredentials()` in `lib/staff-auth.ts`.
 
 ## Implemented staff flow
 
