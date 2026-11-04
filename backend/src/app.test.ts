@@ -292,14 +292,20 @@ describe('backend MVP', () => {
     expect(rejected.status).toBe(401);
   });
 
-  it('prices every bill at ฿30/hour in whole started minutes', async () => {
-    expect(moneyForDurationMs(3_600_000)).toBe(RATE_SATANG);
+  it('prices every bill Alurfia-style: ฿30 entry + ฿30/hour whole-hour blocks, ฿150 all-day cap', async () => {
+    // Zero duration → nothing owed (never played).
     expect(moneyForDurationMs(0)).toBe(0);
-    expect(moneyForDurationMs(42 * 60_000)).toBe(2100);   // ฿21.00 for 42 minutes
-    // Every started minute counts — the gate is the minute boundary, not the satang.
-    expect(moneyForDurationMs(1)).toBe(50);
-    expect(moneyForDurationMs(60_000)).toBe(50);
-    expect(moneyForDurationMs(60_001)).toBe(100);
+    // Any time at all rounds up to one whole-hour block: entry + 1h = ฿60.
+    expect(moneyForDurationMs(1)).toBe(6000);           // ฿60.00
+    expect(moneyForDurationMs(60_000)).toBe(6000);      // ฿60.00 (1 minute)
+    expect(moneyForDurationMs(42 * 60_000)).toBe(6000); // ฿60.00 for 42 minutes (1h block)
+    // Exactly one hour: entry + 1h = ฿60.
+    expect(moneyForDurationMs(3_600_000)).toBe(6000);
+    // Just past an hour boundary → pays the next whole hour: entry + 2h = ฿90.
+    expect(moneyForDurationMs(3_600_001)).toBe(9000);   // ฿90.00
+    // The all-day cap bites at 4h: ฿30 + ฿30×4 = ฿150, and nothing beyond.
+    expect(moneyForDurationMs(4 * 3_600_000)).toBe(15000); // ฿150.00
+    expect(moneyForDurationMs(10 * 3_600_000)).toBe(15000); // ฿150.00 (capped all day)
 
     const app = await makeApp();
     await registerCards(app, ['A']);
@@ -309,7 +315,7 @@ describe('backend MVP', () => {
     const after = Date.now();
     const member = groupsBody.data[0].tags[0];
 
-    // The reported amount is the ฿30/hour rule applied to the *server's* clock, which lies inside the
+    // The reported amount is the ฿30/hr rule applied to the *server's* clock, which lies inside the
     // window this test measured around its request — a client cannot pin it to a single instant, and
     // asserting otherwise only tests the network's latency.
     const checkIn = Date.parse(member.checkInTime);

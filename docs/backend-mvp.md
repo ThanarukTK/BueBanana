@@ -8,15 +8,18 @@ the HTTP contract.
 
 - `PB-01`, `PB-02`, `PB-03`, `PB-04`, `PB-11`, `PB-12`, `PB-13`, `PB-14`, `PB-15`
 - Pain 3: self-service NFC check-in/check-out with staff visibility
-- Rate: ฿30/hour, represented as `3000` satang/hour and billed **per started minute** (฿0.50 a step,
-  `RATE_PER_MINUTE_SATANG`). The bill is always priced **server-side** from the stored check-in time,
-  with **no minimum charge** (`domain.ts` `moneyForDurationMs`). A client never gets to state a price —
-  it confirms the one the backend reports (`BILL_AMOUNT_MISMATCH` carries the expected figure).
+- Rate (Alurfia-style): ฿30 entry + ฿30/hour in whole-hour blocks, capped at ฿150 all-day per
+  person (`domain.ts` `moneyForDurationMs`: `min(ENTRY_SATANG + ceil(hours)×RATE, ALL_DAY_SATANG)`,
+  constants `ENTRY_SATANG=3000`, `RATE_PER_HOUR_SATANG=3000`, `ALL_DAY_SATANG=15000`). A zero-duration
+  session bills 0; any elapsed time rounds up to one whole-hour block. The bill is always priced
+  **server-side** from the stored check-in time — a client never gets to state a price; it confirms
+  the one the backend reports (`BILL_AMOUNT_MISMATCH` carries the expected figure).
 
-  Per-minute granularity is a correctness choice, not a rounding detail: a bill that moved every ~1.2
-  seconds (that rate rounded to the satang) could change between the figure staff read out and the
-  confirm arriving, so on a slow link the customer was asked to re-confirm a price that moved while they
-  watched. With minute steps the amount is stable for a whole minute, and 1h 25m is exactly ฿42.50.
+  Whole-hour blocks are a correctness choice, not a rounding detail: an hour-granular amount is
+  stable for a whole block, so the figure a staff member reads matches what the confirm lands on, and
+  nobody is asked to re-confirm a price that drifts mid-click. The all-day cap is what keeps a long
+  session affordable — at 4 hours the bill reaches ฿30 + ฿30×4 = ฿150 and goes no higher no matter
+  how long the party stays.
 - Group join window: 30 seconds, with a 2-second scan retry deduplication window
 
 ## Run
