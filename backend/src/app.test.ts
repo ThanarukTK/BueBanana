@@ -10,13 +10,26 @@ import { MemoryStore } from './stores/memory-store';
 /**
  * The same suite runs against both stores.
  *
- *   bun test                      → in-memory store (no database, no credentials)
- *   DATABASE_URL=… bun test       → PostgreSQL store, each test starting from a clean schema
+ *   bun test                                  → in-memory store (no database, no credentials)
+ *   ALLOW_TEST_DB_RESET=1 DATABASE_URL=… \
+ *     bun test                                → PostgreSQL store, clean schema per test (DESTRUCTIVE)
  *
  * That equivalence is the point of the repository seam: if the two paths ever disagree, one of them
  * fails here rather than in a demo.
  */
-const DATABASE_URL = (process.env.DATABASE_URL ?? '').trim();
+const RAW_DATABASE_URL = (process.env.DATABASE_URL ?? '').trim();
+/**
+ * `cleanPostgres()` truncates every operational table, so pointing the suite at a database also
+ * means emptying it. Postgres mode is therefore opt-in: a plain `bun test` with `backend/.env`
+ * loaded runs on the in-memory store instead of wiping the configured database.
+ */
+const DATABASE_URL = process.env.ALLOW_TEST_DB_RESET === '1' ? RAW_DATABASE_URL : '';
+if (RAW_DATABASE_URL && !DATABASE_URL) {
+  console.warn(
+    '[test] DATABASE_URL is set but ALLOW_TEST_DB_RESET=1 is not — using the in-memory store so the '
+    + 'configured database is not truncated. Set ALLOW_TEST_DB_RESET=1 to exercise the Postgres path.',
+  );
+}
 const PEPPER = (process.env.TAG_UID_PEPPER ?? '').trim() || 'integration-test-pepper';
 /**
  * Postgres mode reads the whole environment (so `DATABASE_PASSWORD` travels with `DATABASE_URL`);
