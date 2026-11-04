@@ -14,6 +14,7 @@ function allowed(path: string, method: string) {
   if (path === 'api/v1/audit-logs') return method === 'GET';
   if (path === 'api/v1/staff') return method === 'GET' || method === 'POST';
   if (/^api\/v1\/staff\/[^/]+$/.test(path)) return method === 'PATCH' || method === 'DELETE';
+  if (path === 'api/v1/manual/check-in') return method === 'POST';
   if (/^api\/v1\/(groups\/[^/]+\/check-out|sessions\/[^/]+\/check-out)$/.test(path)) return method === 'POST';
   return false;
 }

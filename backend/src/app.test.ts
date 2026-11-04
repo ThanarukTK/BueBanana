@@ -292,6 +292,54 @@ describe('backend MVP', () => {
     expect(rejected.status).toBe(401);
   });
 
+  it('allows a staff manual/emergency check-in without any card or reader', async () => {
+    const app = await makeApp();
+
+    // Staff-only: a reader/device token must be rejected.
+    const unauth = await app.handle(new Request('http://localhost/api/v1/manual/check-in', {
+      method: 'POST', headers: deviceHeaders, body: JSON.stringify({ members: [{ label: 'Nut' }] }),
+    }));
+    expect(unauth.status).toBe(401);
+
+    // Empty member list is refused by the schema (minItems 1).
+    const empty = await app.handle(new Request('http://localhost/api/v1/manual/check-in', {
+      method: 'POST', headers: staffHeaders, body: JSON.stringify({ members: [] }),
+    }));
+    expect(empty.status).toBe(422);
+
+    // Happy path: create a group with two named members, no card anywhere.
+    const created = await app.handle(new Request('http://localhost/api/v1/manual/check-in', {
+      method: 'POST', headers: staffHeaders, body: JSON.stringify({ members: [{ label: 'Nut' }, { label: 'Mint' }] }),
+    }));
+    expect(created.status).toBe(200);
+    const body = await json(created);
+    expect(body.data.groupId).toBeString();
+    expect(body.data.name).toBeString();
+    expect(body.data.members).toHaveLength(2);
+    expect(body.data.members.map((m: any) => m.label)).toEqual(['Nut', 'Mint']);
+
+    // The group is visible on the floor view and is billed from the stored check-in time,
+    // exactly like a scanned group.
+    const groupsBody = await json(await groups(app));
+    const group = groupsBody.data.find((g: any) => g.groupId === body.data.groupId);
+    expect(group).toBeDefined();
+    expect(group.tags).toHaveLength(2);
+    // Both members appear by their friendly label, and bill server-side ≥ a whole-hour step.
+    expect(group.tags.map((t: any) => t.label)).toEqual(['Nut', 'Mint']);
+    for (const member of group.tags) expect(member.amountSatang).toBeGreaterThanOrEqual(3000);
+
+    // They can be checked out individually via the normal staff endpoint.
+    const one = await confirm(app, `/api/v1/sessions/${body.data.members[0].sessionId}/check-out`, {
+      staffId: config.staffId,
+      amount: group.tags[0].amountSatang,
+      customerConfirmed: true,
+    });
+    expect(one.status).toBe(200);
+    const after = await json(await groups(app));
+    const remaining = after.data.find((g: any) => g.groupId === body.data.groupId)!;
+    expect(remaining.tags).toHaveLength(1);
+  });
+
   it('prices every bill Alurfia-style: ฿30 entry + ฿30/hour whole-hour blocks, ฿150 all-day cap', async () => {
     // Zero duration → nothing owed (never played).
     expect(moneyForDurationMs(0)).toBe(0);

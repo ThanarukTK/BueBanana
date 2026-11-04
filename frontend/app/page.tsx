@@ -93,6 +93,9 @@ export default function Home() {
   const [toast, setToast] = useState('');
   const [activity, setActivity] = useState<Activity[]>([]);
   const [filter, setFilter] = useState('');
+  const [manualOpen, setManualOpen] = useState(false);
+  const [manualNames, setManualNames] = useState('');
+  const [manualBusy, setManualBusy] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -275,6 +278,36 @@ export default function Home() {
     }
   }
 
+  async function submitManualCheckIn() {
+    if (manualBusy) return;
+    // Split on commas / newlines, trim, drop empties, cap like the backend.
+    const names = manualNames.split(/[,\n]/).map((s) => s.trim()).filter(Boolean).slice(0, 50);
+    if (!names.length) { setToast('ใส่ชื่อสมาชิกอย่างน้อย 1 คน'); return; }
+    setManualBusy(true);
+    try {
+      const response = await fetch('/api/backend/api/v1/manual/check-in', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ members: names.map((label) => ({ label })) }),
+      });
+      const result = await response.json() as ApiEnvelope & { data?: { groupId?: string; name?: string; members?: Array<{ label?: string | null }> } };
+      if (response.ok) {
+        const count = result.data?.members?.length ?? names.length;
+        setManualNames('');
+        setToast(`เช็กอินสำเร็จ · กลุ่ม ${result.data?.name ?? result.data?.groupId} · ${count} คน`);
+        addActivity(`เช็กอินโหมดฉุกเฉิน · กลุ่ม ${result.data?.name ?? result.data?.groupId} · ${count} คน`, new Date().toISOString());
+        await refresh();
+        window.setTimeout(() => setManualOpen(false), 600);
+      } else {
+        setToast(result.error?.message ?? 'เช็กอินโหมดฉุกเฉินไม่สำเร็จ');
+      }
+    } catch {
+      setToast('เชื่อม Backend ไม่ได้ · ลองอีกครั้ง');
+    } finally {
+      setManualBusy(false);
+    }
+  }
+
   async function logout() {
     await fetch('/api/auth/logout', { method: 'POST' });
     router.replace('/login');
@@ -347,6 +380,21 @@ export default function Home() {
       </div>
 
       <p className="mt-5 text-xs text-[#8b949e]">฿30/ชั่วโมง เริ่มชั่วโมงแรก · สูงสุด ฿150 (ชั่วโมงที่ 5) · คำนวณและยืนยันยอดโดย Backend</p>
+
+      <section className="mt-6 rounded-2xl border border-[#4b3d6e] bg-[#171220] shadow-sm">
+        <button type="button" onClick={() => setManualOpen((o) => !o)} className="flex w-full items-center justify-between gap-3 px-5 py-4 text-left" aria-expanded={manualOpen}>
+          <div className="flex items-center gap-3"><span className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-[#7140dd]/30 to-[#3c55dd]/30 text-[#c4b5fd]"><Icon name="card" size={16} /></span><div><p className="text-sm font-semibold text-[#f0f6fc]">โหมดฉุกเฉิน · เช็กอินโดยไม่ใช้เครื่องอ่าน</p><p className="mt-0.5 text-xs text-[#8b949e]">ใช้เมื่อเครื่องอ่าน NFC ไม่ทำงาน · เปิดใช้ชั่วคราว</p></div></div>
+          <span className={`text-[#a78bfa] transition-transform ${manualOpen ? 'rotate-180' : ''}`}>{manualOpen ? '▲' : '▼'}</span>
+        </button>
+        {manualOpen && <div className="border-t border-[#3a2f52] px-5 py-4">
+          <p className="text-xs leading-5 text-[#8b949e]">สมาชิกแต่ละคนจะถูกเพิ่มเป็นผู้เล่นในกลุ่มใหม่โดยเริ่มนับเวลาทันที · คั่นชื่อด้วยเครื่องหมายจุลภาคแล้วกดปุ่ม</p>
+          <div className="mt-3 flex flex-col gap-3 sm:flex-row">
+            <textarea id="manual-names" value={manualNames} onChange={(event) => setManualNames(event.target.value)} rows={2} placeholder="เช่น นัท, มิ้นท์, เบียร์" className="min-h-[70px] flex-1 resize-none rounded-lg border border-[#30363d] bg-[#0d1117] px-3 py-2.5 text-sm text-[#e6edf3] outline-none placeholder:text-[#6e7681] focus:border-[#a78bfa]" />
+            <button type="button" onClick={() => void submitManualCheckIn()} disabled={manualBusy || !manualNames.trim()} className="h-fit shrink-0 self-start rounded-lg bg-gradient-to-br from-[#7140dd] to-[#3c55dd] px-4 py-2.5 text-xs font-semibold text-white hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40 sm:self-auto">{manualBusy ? 'กำลังเช็กอิน…' : 'เช็กอินสมาชิก'}</button>
+          </div>
+          <p className="mt-2 text-[11px] text-[#8b949e]">เปิดเฉพาะยามจำเป็น · บันทึกผู้ดำเนินการลงใน Audit log แล้ว</p>
+        </div>}
+      </section>
     </div>
 
     {checkoutTarget && <CheckoutModal target={checkoutTarget} confirmed={checkoutConfirmed} busy={checkoutBusy} onConfirm={setCheckoutConfirmed} onClose={() => { if (!checkoutBusy) { setCheckoutTarget(null); setCheckoutConfirmed(false); } }} onSubmit={() => void submitCheckout()} />}

@@ -7,6 +7,7 @@ import {
   type GroupView,
   type RosterMember,
   type Session,
+  friendlyGroupName,
   groupResponse,
   hashTagUid,
   sessionAmountSatang,
@@ -148,6 +149,75 @@ export function createApp(options: AppOptions = {}) {
       return { data: { tagId: tag.tagId, label: tag.label, status: tag.status } };
     }, {
       body: t.Object({ rawTagUid: t.String({ minLength: 1 }), label: t.Optional(t.String({ maxLength: 80 })) }),
+    })
+
+    // -------------------------------------------------------------------------------------
+    // Staff: manual / emergency check-in (no reader, no physical card)
+    //
+    // This is the fallback when the NFC reader is down or unavailable: a staff member starts a
+    // group and adds members by name, so check-in can keep working without any hardware. It is a
+    // deliberate, staff-only, opt-in path — the ordinary UI never uses it.
+    //
+    // Representing members without cards: each member mints a synthetic tag whose uidHash is a
+    // non-scanable marker (`manual-…`) rather than a real UID hash. That keeps every invariant the
+    // card model relies on — the `tag_id` FK, the "one open session per tag" index, receipts and
+    // server-side billing from the stored check-in time — without requiring a physical NFC card.
+    // Because the uidHash can never match a real tap, these members cannot be (re-)scanned; staff
+    // check them out individually or as a group via the normal endpoints.
+    //
+    // We do NOT open a join window, so a later real-card scan starts its own fresh group instead of
+    // absorbing these members into the reader's open window.
+    // -------------------------------------------------------------------------------------
+    .post('/api/v1/manual/check-in', async ({ request, body, set, server }) => {
+      const staffId = staffIdFrom(request, config);
+      if (!staffId) {
+        set.status = 401;
+        return errorBody('STAFF_UNAUTHORIZED', 'Staff authentication required');
+      }
+      if (!body.members?.length) {
+        set.status = 400;
+        return errorBody('VALIDATION_ERROR', 'At least one member is required');
+      }
+      const now = Date.now();
+      const nowIso = new Date(now).toISOString();
+      const outcome = await repo.transaction(async (tx) => {
+        const group: Group = { groupId: crypto.randomUUID(), status: 'active', startTime: nowIso, sessionIds: [] };
+        await tx.createGroup(group);
+        const added: RosterMember[] = [];
+        for (const member of body.members) {
+          // Synthetic, non-scanable identity — unique per member so nothing collides. Never a raw UID,
+          // and it cannot be derived from (or replayed as) a physical card (PDPA-minimisation friendly).
+          const tag = await tx.registerTag(`manual:${crypto.randomUUID()}`, member.label ?? null);
+          const session: Session = {
+            sessionId: crypto.randomUUID(), tagId: tag.tagId, groupId: group.groupId,
+            checkInTime: nowIso, checkOutTime: null, status: 'open',
+          };
+          await tx.addSessionToGroup(group.groupId, session);
+          added.push({ tag, session });
+        }
+        await tx.appendAudit({
+          actor: staffId, tagId: null, action: 'manual.check-in',
+          endpoint: '/api/v1/manual/check-in', result: 'success',
+        });
+        const view = (await tx.groupView(group.groupId))!;
+        return { group, added, view };
+      });
+      publishTo(server, ADMIN_TOPIC, groupUpdated(outcome.view, now));
+      return {
+        data: {
+          groupId: outcome.group.groupId,
+          name: friendlyGroupName(outcome.group.groupId),
+          members: outcome.added.map((member) => ({
+            sessionId: member.session.sessionId,
+            label: member.tag.label,
+            checkInTime: member.session.checkInTime,
+          })),
+        },
+      };
+    }, {
+      body: t.Object({
+        members: t.Array(t.Object({ label: t.Optional(t.String({ maxLength: 80 })) }), { minItems: 1, maxItems: 50 }),
+      }),
     })
 
     // -------------------------------------------------------------------------------------
