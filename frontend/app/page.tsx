@@ -13,6 +13,7 @@ type Member = {
 };
 type Group = {
   groupId: string;
+  name?: string;
   status: 'active' | 'closed';
   startTime: string;
   tags: Member[];
@@ -65,6 +66,10 @@ function time(iso: string) {
 function duration(iso: string) {
   const minutes = Math.max(0, Math.floor((Date.now() - Date.parse(iso)) / 60_000));
   return minutes < 60 ? `${minutes} นาที` : `${Math.floor(minutes / 60)} ชม. ${minutes % 60} นาที`;
+}
+/** Show a group's friendly placement name when the backend provides one, else its id. */
+function displayGroup(group: Group | undefined | null, groupId: string) {
+  return group?.name || groupId;
 }
 
 export default function Home() {
@@ -208,7 +213,7 @@ export default function Home() {
 
   const activeGroups = useMemo(() => groups
     .filter((group) => group.status === 'active')
-    .filter((group) => `${group.groupId} ${group.tags.map((member) => `${member.label ?? ''} ${member.tagId}`).join(' ')}`.toLowerCase().includes(filter.toLowerCase())), [groups, filter]);
+    .filter((group) => `${group.name ?? ''} ${group.groupId} ${group.tags.map((member) => `${member.label ?? ''} ${member.tagId}`).join(' ')}`.toLowerCase().includes(filter.toLowerCase())), [groups, filter]);
   const activeScan = scan && Date.now() - Date.parse(scan.at) < 30_000 ? scan : null;
   const scanningMember = activeScan && groups.find((group) => group.groupId === activeScan.groupId)?.tags.find((member) => member.sessionId === activeScan.sessionId);
 
@@ -321,7 +326,7 @@ export default function Home() {
           <section className="rounded-2xl border border-[#21262d] bg-[#11161d] p-5 shadow-sm">
             <div className="flex items-start justify-between gap-2"><div><h2 className="font-semibold text-[#f0f6fc]">กำลังแตะบัตร</h2><p className="mt-1 text-xs text-[#8b949e]">สถานะจากเหตุการณ์สแกนล่าสุด</p></div><Status state={realtimeState} label={realtimeLabel} /></div>
             {activeScan
-              ? <div className="mt-4 rounded-xl border border-[#2e3f52] bg-[#14202e] p-4"><p className="text-sm font-semibold text-[#7dd3fc]">{scanningMember?.label || `ชิป ${activeScan.scanningTagId.slice(-6)}`}</p><p className="mt-1 text-xs text-[#9fb3c8]">กลุ่ม {activeScan.groupId}</p><p className="mt-2 text-[11px] text-[#8b949e]">{checkoutScan?.sessionId === activeScan.sessionId ? 'สมาชิกเดิม · เลือกเช็กเอาต์จากปุ่มในกลุ่มได้' : 'สมาชิกใหม่ · เพิ่มเข้ากลุ่มแล้ว'} · {time(activeScan.at)}</p></div>
+              ? <div className="mt-4 rounded-xl border border-[#2e3f52] bg-[#14202e] p-4"><p className="text-sm font-semibold text-[#7dd3fc]">{scanningMember?.label || `ชิป ${activeScan.scanningTagId.slice(-6)}`}</p><p className="mt-1 text-xs text-[#9fb3c8]">กลุ่ม {displayGroup(groups.find((group) => group.groupId === activeScan.groupId), activeScan.groupId)}</p><p className="mt-2 text-[11px] text-[#8b949e]">{checkoutScan?.sessionId === activeScan.sessionId ? 'สมาชิกเดิม · เลือกเช็กเอาต์จากปุ่มในกลุ่มได้' : 'สมาชิกใหม่ · เพิ่มเข้ากลุ่มแล้ว'} · {time(activeScan.at)}</p></div>
               : <p className="mt-4 rounded-xl bg-[#161b22] px-4 py-6 text-center text-sm text-[#8b949e]">ยังไม่มีการแตะบัตรใน 30 วินาทีล่าสุด</p>}
             <p className="mt-3 text-[11px] leading-5 text-[#8b949e]">สถานะนี้แสดงกลุ่มและสมาชิกจาก Backend ไม่ได้ระบุตำแหน่งโต๊ะ</p>
           </section>
@@ -361,7 +366,7 @@ function Summary({ title, value, icon }: { title: string; value: string; icon: s
 function GroupCard({ group, scan, showCheckoutActions, onCheckout }: { group: Group; scan: ScanActivity | null; showCheckoutActions: boolean; onCheckout: (group: Group, member?: Member) => void }) {
   const scanning = scan?.groupId === group.groupId ? scan.sessionId : null;
   return <article id={`group-${group.groupId}`} className="px-5 py-5">
-    <div className="flex flex-wrap items-start justify-between gap-3"><div><p className="font-semibold text-[#f0f6fc]">กลุ่ม {group.groupId}</p><p className="mt-1 text-xs text-[#8b949e]">เริ่ม {time(group.startTime)} · สมาชิก {group.tags.length} คน</p></div><div className="text-right"><p className="text-xs text-[#8b949e]">ยอดทั้งกลุ่ม</p><p className="mt-1 font-semibold text-[#a5f3fc]">{money(group.amountSatang)}</p></div></div>
+    <div className="flex flex-wrap items-start justify-between gap-3"><div><p className="font-semibold text-[#f0f6fc]">กลุ่ม {displayGroup(group, group.groupId)}</p><p className="mt-1 text-xs text-[#8b949e]">เริ่ม {time(group.startTime)} · สมาชิก {group.tags.length} คน</p></div><div className="text-right"><p className="text-xs text-[#8b949e]">ยอดทั้งกลุ่ม</p><p className="mt-1 font-semibold text-[#a5f3fc]">{money(group.amountSatang)}</p></div></div>
     <ul className="mt-4 space-y-2">{group.tags.map((member) => <li id={`member-${member.sessionId}`} key={member.sessionId} className={`flex flex-wrap items-center justify-between gap-3 rounded-xl px-3 py-3 ${scanning === member.sessionId ? 'border border-[#a78bfa]/60 bg-[#201b3a]' : 'border border-transparent bg-[#161b22]'}`}>
       <div className="flex min-w-0 items-center gap-3"><span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[#7140dd]/40 to-[#3c55dd]/40 text-xs font-semibold text-[#c4b5fd]"><Icon name="card" size={15} /></span><div className="min-w-0"><p className="truncate text-sm font-medium text-[#e6edf3]">{member.label || `ชิป ${member.tagId.slice(-6)}`}{scanning === member.sessionId && <span className="ml-2 rounded-full bg-[#3b2f63] px-2 py-0.5 text-[10px] font-semibold text-[#c4b5fd]">กำลังสแกน</span>}</p><p className="mt-0.5 text-[11px] text-[#8b949e]">เช็กอิน {time(member.checkInTime)} · {duration(member.checkInTime)}</p></div></div>
       <div className="flex items-center gap-3"><span className="text-xs font-medium text-[#c9d1d9]">{money(member.amountSatang)}</span>{showCheckoutActions && <button onClick={() => onCheckout(group, member)} className="rounded-lg border border-[#30363d] bg-[#1c2431] px-3 py-2 text-xs font-semibold text-[#a78bfa] hover:bg-[#273040]">เช็กเอาต์รายคน</button>}</div>
@@ -375,7 +380,7 @@ function CheckoutModal({ target, confirmed, busy, onConfirm, onClose, onSubmit }
   return <div className="modal-backdrop fixed inset-0 z-40 flex items-center justify-center bg-black/60 p-4" onMouseDown={(event) => { if (event.target === event.currentTarget) onClose(); }}>
     <section role="dialog" aria-modal="true" aria-labelledby="checkout-title" className="w-full max-w-md rounded-2xl border border-[#30363d] bg-[#11161d] p-6 shadow-2xl">
       <div className="flex items-start justify-between"><div><h2 id="checkout-title" className="text-lg font-bold text-[#f0f6fc]">ยืนยันการเช็กเอาต์</h2><p className="mt-1 text-xs text-[#8b949e]">ตรวจสอบยอดกับลูกค้าก่อนบันทึก</p></div><button aria-label="ปิด" onClick={onClose} className="rounded-lg p-2 text-[#8b949e] hover:bg-[#1c2431]"><Icon name="close" size={17} /></button></div>
-      <div className="mt-5 rounded-xl bg-[#161b22] p-4"><p className="text-xs text-[#8b949e]">{target.member ? 'เช็กเอาต์รายคน' : 'เช็กเอาต์ทั้งกลุ่ม'} · กลุ่ม {target.group.groupId}</p>{target.member && <p className="mt-2 font-medium text-[#e6edf3]">{target.member.label || `ชิป ${target.member.tagId.slice(-6)}`}</p>}<div className="mt-4 flex items-end justify-between border-t border-[#21262d] pt-3"><span className="text-sm text-[#8b949e]">ยอดที่ Backend คำนวณ</span><strong className="text-2xl text-[#a5f3fc]">{money(amount)}</strong></div></div>
+      <div className="mt-5 rounded-xl bg-[#161b22] p-4"><p className="text-xs text-[#8b949e]">{target.member ? 'เช็กเอาต์รายคน' : 'เช็กเอาต์ทั้งกลุ่ม'} · กลุ่ม {displayGroup(target.group, target.group.groupId)}</p>{target.member && <p className="mt-2 font-medium text-[#e6edf3]">{target.member.label || `ชิป ${target.member.tagId.slice(-6)}`}</p>}<div className="mt-4 flex items-end justify-between border-t border-[#21262d] pt-3"><span className="text-sm text-[#8b949e]">ยอดที่ Backend คำนวณ</span><strong className="text-2xl text-[#a5f3fc]">{money(amount)}</strong></div></div>
       <label className="mt-4 flex cursor-pointer items-start gap-3 rounded-xl border border-[#30363d] p-3.5"><input type="checkbox" checked={confirmed} disabled={busy} onChange={(event) => onConfirm(event.target.checked)} className="mt-0.5 h-4 w-4 accent-[#a78bfa]" /><span className="text-xs leading-5 text-[#c9d1d9]">ลูกค้าตรวจสอบยอดและยืนยันจำนวนเงินนี้แล้ว</span></label>
       <p className="mt-3 text-[11px] leading-5 text-[#8b949e]">ระบบจะส่งยอดที่แสดงให้ Backend ตรวจซ้ำ หากยอดเปลี่ยนต้องให้ลูกค้ายืนยันใหม่</p>
       <div className="mt-5 flex gap-2"><button disabled={busy} onClick={onClose} className="h-10 flex-1 rounded-xl border border-[#30363d] text-xs font-semibold text-[#8b949e] hover:bg-[#161b22]">ยกเลิก</button><button disabled={!confirmed || busy} onClick={onSubmit} className="h-10 flex-1 rounded-xl bg-gradient-to-br from-[#7140dd] to-[#3c55dd] text-xs font-semibold text-white hover:opacity-90 disabled:cursor-not-allowed disabled:from-[#3a3670] disabled:to-[#373a63]">{busy ? 'กำลังบันทึก…' : 'ยืนยันเช็กเอาต์'}</button></div>
