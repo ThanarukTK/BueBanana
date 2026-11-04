@@ -90,6 +90,42 @@ export function sessionAmountSatang(session: Session, now = Date.now()): number 
   return moneyForDurationMs(end - Date.parse(session.checkInTime));
 }
 
+/** Friendly placement/table names, picked (stably) per group for the staff view. */
+export const GROUP_NAMES = [
+  'Banana Bay',
+  'Catan Cove',
+  'Scrabble Street',
+  'Jenga Plaza',
+  'Uno Sunset',
+  'Monopoly Manor',
+  'Dice Dock',
+  'Domino Den',
+  'Puzzle Pier',
+  'Checker Corner',
+  'Ludo Lounge',
+  'Rummy River',
+  'Bingo Bay',
+  'Cluedo Corner',
+  'Mahjong Meadow',
+  'Meeple Meeting',
+  'Poker Palm',
+  'Card Corner',
+  'Treasure Table',
+  'Joker Junction',
+] as const;
+
+/**
+ * Pick a friendly name for a group. Deterministic on the groupId (same group always same
+ * friendly name), so it needs no database column and works in-memory and on Postgres alike.
+ */
+export function friendlyGroupName(groupId: string): string {
+  let h = 0;
+  for (let i = 0; i < groupId.length; i++) {
+    h = (h * 31 + groupId.charCodeAt(i)) >>> 0;
+  }
+  return GROUP_NAMES[h % GROUP_NAMES.length];
+}
+
 /**
  * Staff-facing `Group` projection (`docs/api-contract.md` §2).
  *
@@ -97,6 +133,8 @@ export function sessionAmountSatang(session: Session, now = Date.now()): number 
  * `/api/v1` (add only, never remove/rename). They exist so a staff client can address one member's
  * check-out and show the exact amount the backend will accept, instead of re-deriving the bill
  * itself and risking a `BILL_AMOUNT_MISMATCH` on a rounding difference.
+ *
+ * `name` (the friendly placement name) is likewise additive for display.
  */
 export function groupResponse(group: Group, members: RosterMember[], now = Date.now()) {
   const open = members.filter((member) => member.session.status === 'open');
@@ -109,6 +147,7 @@ export function groupResponse(group: Group, members: RosterMember[], now = Date.
   }));
   return {
     groupId: group.groupId,
+    name: friendlyGroupName(group.groupId),
     status: group.status,
     startTime: group.startTime,
     tags: entries,
