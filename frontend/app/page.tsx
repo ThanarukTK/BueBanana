@@ -41,7 +41,7 @@ type Activity = { id: string; message: string; at: string };
 type BackendState = 'connecting' | 'connected' | 'offline';
 type RealtimeState = 'connecting' | 'connected' | 'offline';
 type StaffProfile = { staffId: string; username: string; displayName: string; role: 'staff' | 'admin' };
-type ScanDetailsSelection = { groupId: string; sessionIds: string[] };
+type CheckoutTarget = { group: Group; member?: Member };
 
 function Icon({ name, size = 18 }: { name: string; size?: number }) {
   const common = { width: size, height: size, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 1.8, strokeLinecap: 'round' as const, strokeLinejoin: 'round' as const };
@@ -80,7 +80,8 @@ export default function Home() {
   const [updatedAt, setUpdatedAt] = useState('');
   const [scan, setScan] = useState<ScanActivity | null>(null);
   const [pendingScanFocus, setPendingScanFocus] = useState<ScanActivity | null>(null);
-  const [scanDetailsSelection, setScanDetailsSelection] = useState<ScanDetailsSelection | null>(null);
+  const [checkoutScan, setCheckoutScan] = useState<{ groupId: string; sessionId: string } | null>(null);
+  const [checkoutTarget, setCheckoutTarget] = useState<CheckoutTarget | null>(null);
   const [checkoutConfirmed, setCheckoutConfirmed] = useState(false);
   const [checkoutBusy, setCheckoutBusy] = useState(false);
   const [toast, setToast] = useState('');
@@ -174,23 +175,15 @@ export default function Home() {
         setScan(nextScan);
         setPendingScanFocus(nextScan);
         setFilter('');
-        setScanDetailsSelection((current) => ({
-          groupId: nextScan.groupId,
-          sessionIds: current?.groupId === nextScan.groupId
-            ? [...new Set([...current.sessionIds, nextScan.sessionId])]
-            : [nextScan.sessionId],
-        }));
+        const scannedGroup = groups.find((group) => group.groupId === nextScan.groupId);
+        const existingMember = scannedGroup?.tags.find((member) =>
+          member.sessionId === nextScan.sessionId || member.tagId === nextScan.scanningTagId,
+        );
+        setCheckoutScan(existingMember ? { groupId: nextScan.groupId, sessionId: existingMember.sessionId } : null);
+        setCheckoutTarget(null);
         setCheckoutConfirmed(false);
         addActivity(`มีการแตะบัตร · กลุ่ม ${String(data.groupId ?? '')}`, at);
-        void refresh().then((freshGroups) => {
-          if (!freshGroups) return;
-          const group = freshGroups.find((item) => item.groupId === nextScan.groupId);
-          if (!group?.tags.some((member) => member.sessionId === nextScan.sessionId)) {
-            setScanDetailsSelection((current) => current?.groupId === nextScan.groupId
-              ? { ...current, sessionIds: current.sessionIds.filter((sessionId) => sessionId !== nextScan.sessionId) }
-              : current);
-          }
-        });
+        void refresh();
       } else if (event.event === 'group.updated') {
         const data = event.data ?? {};
         addActivity(`ข้อมูลกลุ่ม ${String(data.groupId ?? '')} เปลี่ยนแปลง`, at);
@@ -199,9 +192,7 @@ export default function Home() {
         const data = event.data ?? {};
         const sessionId = String(data.sessionId ?? '');
         setScan((current) => current?.sessionId === sessionId ? null : current);
-        setScanDetailsSelection((current) => current
-          ? { ...current, sessionIds: current.sessionIds.filter((selectedId) => selectedId !== sessionId) }
-          : current);
+        setCheckoutScan((current) => current?.sessionId === sessionId ? null : current);
         addActivity(`เช็กเอาต์สมาชิกแล้ว · กลุ่ม ${String(data.groupId ?? '')}`, at);
         void refresh();
       }
@@ -227,45 +218,50 @@ export default function Home() {
     setPendingScanFocus(null);
   }, [activeGroups, pendingScanFocus]);
 
+  function openCheckout(group: Group, member?: Member) {
+    setCheckoutTarget({ group, member });
+    setCheckoutConfirmed(false);
+  }
+
   async function submitCheckout() {
-    if (!scanDetailsSelection || !checkoutConfirmed || checkoutBusy) return;
-    const selectedGroup = groups.find((group) => group.groupId === scanDetailsSelection.groupId);
-    const selectedMembers = selectedGroup?.tags.filter((member) => scanDetailsSelection.sessionIds.includes(member.sessionId)) ?? [];
-    if (!selectedGroup || selectedMembers.length === 0) return;
-
+    if (!checkoutTarget || !checkoutConfirmed || checkoutBusy) return;
+    const target = checkoutTarget;
+    const amount = target.member?.amountSatang ?? target.group.amountSatang;
+    const endpoint = target.member
+      ? `/api/backend/api/v1/sessions/${encodeURIComponent(target.member.sessionId)}/check-out`
+      : `/api/backend/api/v1/groups/${encodeURIComponent(target.group.groupId)}/check-out`;
     setCheckoutBusy(true);
-    let checkedOut = 0;
-    let failure = '';
     try {
-      for (const member of selectedMembers) {
-        const response = await fetch(`/api/backend/api/v1/sessions/${encodeURIComponent(member.sessionId)}/check-out`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ amount: member.amountSatang, customerConfirmed: true }),
+      const response = await fetch(endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ amount, customerConfirmed: true }),
+      });
+      const result = await response.json() as ApiEnvelope;
+      if (response.ok) {
+        setCheckoutTarget(null);
+        setCheckoutConfirmed(false);
+        setCheckoutScan(null);
+        setToast('บันทึกการเช็กเอาต์แล้ว');
+        addActivity(`เช็กเอาต์สำเร็จ · ${target.member ? 'รายคน' : 'ทั้งกลุ่ม'} ${target.group.groupId}`, new Date().toISOString());
+        await refresh();
+      } else if (response.status === 409 && result.error?.code === 'BILL_AMOUNT_MISMATCH' && typeof result.error.details?.amount === 'number') {
+        const expected = result.error.details.amount;
+        setCheckoutTarget((current) => {
+          if (!current) return current;
+          if (!current.member) return { ...current, group: { ...current.group, amountSatang: expected } };
+          const member = { ...current.member, amountSatang: expected };
+          return { ...current, member, group: { ...current.group, tags: current.group.tags.map((entry) => entry.sessionId === member.sessionId ? member : entry) } };
         });
-        const result = await response.json() as ApiEnvelope;
-        if (!response.ok) {
-          failure = result.error?.message ?? `เช็กเอาต์ ${member.label || member.tagId} ไม่สำเร็จ`;
-          break;
-        }
-        checkedOut += 1;
-      }
-
-      if (checkedOut > 0) {
-        addActivity(`เช็กเอาต์สมาชิกแล้ว ${checkedOut}/${selectedMembers.length} คน · กลุ่ม ${selectedGroup.groupId}`, new Date().toISOString());
-      }
-      if (checkedOut > 0 || failure) await refresh();
-      if (failure) {
-        setToast(checkedOut > 0 ? `บันทึกแล้ว ${checkedOut} คน · ${failure}` : failure);
         setCheckoutConfirmed(false);
+        setToast(`ยอดเปลี่ยนเป็น ${money(expected)} · ตรวจสอบกับลูกค้าแล้วกดยืนยันอีกครั้ง`);
+        await refresh();
       } else {
-        setToast(`บันทึกเช็กเอาต์ ${checkedOut} คนแล้ว`);
-        setScanDetailsSelection(null);
-        setCheckoutConfirmed(false);
+        setToast(result.error?.message ?? 'เช็กเอาต์ไม่สำเร็จ · โหลดข้อมูลใหม่แล้วลองอีกครั้ง');
+        await refresh();
       }
     } catch {
-      setToast(checkedOut > 0 ? `บันทึกแล้ว ${checkedOut} คน · การเชื่อมต่อขาดหาย` : 'เชื่อม Backend ไม่ได้ · ลองอีกครั้ง');
-      setCheckoutConfirmed(false);
+      setToast('เชื่อม Backend ไม่ได้ · ลองโหลดข้อมูลใหม่');
     } finally {
       setCheckoutBusy(false);
       window.setTimeout(() => setToast(''), 5_000);
@@ -299,7 +295,7 @@ export default function Home() {
 
     <div className="mx-auto max-w-7xl px-5 py-7 sm:px-8">
       <div className="flex flex-wrap items-end justify-between gap-3">
-        <div><p className="text-xs font-semibold tracking-[.15em] text-[#63806b]">STAFF VIEW</p><h1 className="mt-1 text-2xl font-semibold tracking-tight sm:text-3xl">กลุ่มที่กำลังเล่น</h1><p className="mt-2 text-sm text-[#7e857b]">สแกนชิปของสมาชิกที่จะออกเพื่อเลือก แล้วตรวจสอบรายละเอียดทั้งกลุ่มก่อนยืนยัน</p></div>
+        <div><p className="text-xs font-semibold tracking-[.15em] text-[#63806b]">STAFF VIEW</p><h1 className="mt-1 text-2xl font-semibold tracking-tight sm:text-3xl">กลุ่มที่กำลังเล่น</h1><p className="mt-2 text-sm text-[#7e857b]">สแกนชิปเดิมเพื่อเปิดตัวเลือกเช็กเอาต์ · สแกนชิปใหม่เพื่อเพิ่มสมาชิกในกลุ่มที่เปิดไว้</p></div>
         {updatedAt && <p className="text-xs text-[#858a80]">อัปเดต {time(updatedAt)}</p>}
       </div>
 
@@ -314,7 +310,7 @@ export default function Home() {
           </div>
           {backendState === 'connected' && activeGroups.length === 0
             ? <p className="px-5 py-14 text-center text-sm text-[#858a80]">ไม่มีกลุ่มที่กำลังเล่น</p>
-            : <div className="divide-y divide-[#edf0e9]">{activeGroups.map((group) => <GroupCard key={group.groupId} group={group} scan={scanDetailsSelection?.groupId === group.groupId && scanDetailsSelection.sessionIds.includes(scan?.sessionId ?? '') ? scan : null} />)}</div>}
+            : <div className="divide-y divide-[#edf0e9]">{activeGroups.map((group) => <GroupCard key={group.groupId} group={group} scan={activeScan?.groupId === group.groupId ? activeScan : null} showCheckoutActions={Boolean(activeScan && checkoutScan?.groupId === group.groupId && checkoutScan.sessionId === activeScan.sessionId)} onCheckout={openCheckout} />)}</div>}
           {backendState === 'connecting' && <p className="px-5 py-14 text-center text-sm text-[#858a80]">กำลังโหลดกลุ่มจาก Backend…</p>}
           {backendState === 'offline' && groups.length === 0 && <p className="px-5 py-10 text-center text-sm text-[#858a80]">ยังไม่มีข้อมูลกลุ่ม · ระบบไม่แสดงข้อมูลตัวอย่าง</p>}
         </section>
@@ -323,7 +319,7 @@ export default function Home() {
           <section className="rounded-2xl border border-[#e6e9e1] bg-white p-5 shadow-sm">
             <div className="flex items-start justify-between gap-2"><div><h2 className="font-semibold">กำลังแตะบัตร</h2><p className="mt-1 text-xs text-[#858a80]">สถานะจากเหตุการณ์สแกนล่าสุด</p></div><Status state={realtimeState} label={realtimeLabel} /></div>
             {activeScan
-              ? <div className="mt-4 rounded-xl border border-[#d5e5d4] bg-[#f1f7f0] p-4"><p className="text-sm font-semibold text-[#315b43]">{scanningMember?.label || `ชิป ${activeScan.scanningTagId.slice(-6)}`}</p><p className="mt-1 text-xs text-[#667466]">กลุ่ม {activeScan.groupId}</p><p className="mt-2 text-[11px] text-[#879184]">เลือกสมาชิกสำหรับเช็กเอาต์ · {time(activeScan.at)}</p></div>
+              ? <div className="mt-4 rounded-xl border border-[#d5e5d4] bg-[#f1f7f0] p-4"><p className="text-sm font-semibold text-[#315b43]">{scanningMember?.label || `ชิป ${activeScan.scanningTagId.slice(-6)}`}</p><p className="mt-1 text-xs text-[#667466]">กลุ่ม {activeScan.groupId}</p><p className="mt-2 text-[11px] text-[#879184]">{checkoutScan?.sessionId === activeScan.sessionId ? 'สมาชิกเดิม · เลือกเช็กเอาต์จากปุ่มในกลุ่มได้' : 'สมาชิกใหม่ · เพิ่มเข้ากลุ่มแล้ว'} · {time(activeScan.at)}</p></div>
               : <p className="mt-4 rounded-xl bg-[#f6f7f3] px-4 py-6 text-center text-sm text-[#858a80]">ยังไม่มีการแตะบัตรใน 30 วินาทีล่าสุด</p>}
             <p className="mt-3 text-[11px] leading-5 text-[#8a8f86]">สถานะนี้แสดงกลุ่มและสมาชิกจาก Backend ไม่ได้ระบุตำแหน่งโต๊ะ</p>
           </section>
@@ -346,10 +342,7 @@ export default function Home() {
       <p className="mt-5 text-xs text-[#8a8f86]">คิดค่าบริการ ฿30 ต่อชั่วโมง · คำนวณและยืนยันยอดโดย Backend</p>
     </div>
 
-    {scanDetailsSelection && (() => {
-      const group = groups.find((item) => item.groupId === scanDetailsSelection.groupId);
-      return group ? <CheckoutModal group={group} selectedSessionIds={scanDetailsSelection.sessionIds} confirmed={checkoutConfirmed} busy={checkoutBusy} onConfirm={setCheckoutConfirmed} onClose={() => { if (!checkoutBusy) { setScanDetailsSelection(null); setCheckoutConfirmed(false); } }} onSubmit={() => void submitCheckout()} /> : null;
-    })()}
+    {checkoutTarget && <CheckoutModal target={checkoutTarget} confirmed={checkoutConfirmed} busy={checkoutBusy} onConfirm={setCheckoutConfirmed} onClose={() => { if (!checkoutBusy) { setCheckoutTarget(null); setCheckoutConfirmed(false); } }} onSubmit={() => void submitCheckout()} />}
     {toast && <div role="status" className="fixed bottom-5 left-1/2 z-50 -translate-x-1/2 rounded-xl bg-[#222720] px-5 py-3 text-sm text-white shadow-xl">{toast}</div>}
   </main>;
 }
@@ -363,28 +356,27 @@ function Summary({ title, value, icon }: { title: string; value: string; icon: s
   return <div className="rounded-2xl border border-[#e6e9e1] bg-white p-5 shadow-sm"><div className="flex items-center justify-between"><p className="text-sm text-[#747b71]">{title}</p><span className="text-[#587b5d]"><Icon name={icon} /></span></div><p className="mt-3 text-3xl font-semibold tracking-tight">{value}</p></div>;
 }
 
-function GroupCard({ group, scan }: { group: Group; scan: ScanActivity | null }) {
+function GroupCard({ group, scan, showCheckoutActions, onCheckout }: { group: Group; scan: ScanActivity | null; showCheckoutActions: boolean; onCheckout: (group: Group, member?: Member) => void }) {
   const scanning = scan?.groupId === group.groupId ? scan.sessionId : null;
   return <article id={`group-${group.groupId}`} className="px-5 py-5">
     <div className="flex flex-wrap items-start justify-between gap-3"><div><p className="font-semibold">กลุ่ม {group.groupId}</p><p className="mt-1 text-xs text-[#858a80]">เริ่ม {time(group.startTime)} · สมาชิก {group.tags.length} คน</p></div><div className="text-right"><p className="text-xs text-[#858a80]">ยอดทั้งกลุ่ม</p><p className="mt-1 font-semibold">{money(group.amountSatang)}</p></div></div>
     <ul className="mt-4 space-y-2">{group.tags.map((member) => <li id={`member-${member.sessionId}`} key={member.sessionId} className={`flex flex-wrap items-center justify-between gap-3 rounded-xl px-3 py-3 ${scanning === member.sessionId ? 'bg-[#eaf4e8] ring-2 ring-[#86aa80]' : 'bg-[#f7f8f5]'}`}>
-      <div className="flex min-w-0 items-center gap-3"><span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white text-xs font-semibold text-[#587b5d]"><Icon name="card" size={15} /></span><div className="min-w-0"><p className="truncate text-sm font-medium">{member.label || `ชิป ${member.tagId.slice(-6)}`}{scanning === member.sessionId && <span className="ml-2 rounded-full bg-[#dcebd9] px-2 py-0.5 text-[10px] font-semibold text-[#315b43]">เลือกแล้ว</span>}</p><p className="mt-0.5 text-[11px] text-[#858a80]">เช็กอิน {time(member.checkInTime)} · {duration(member.checkInTime)}</p></div></div>
-      <div className="flex items-center gap-3"><span className="text-xs font-medium">{money(member.amountSatang)}</span></div>
+      <div className="flex min-w-0 items-center gap-3"><span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white text-xs font-semibold text-[#587b5d]"><Icon name="card" size={15} /></span><div className="min-w-0"><p className="truncate text-sm font-medium">{member.label || `ชิป ${member.tagId.slice(-6)}`}{scanning === member.sessionId && <span className="ml-2 rounded-full bg-[#dcebd9] px-2 py-0.5 text-[10px] font-semibold text-[#315b43]">กำลังสแกน</span>}</p><p className="mt-0.5 text-[11px] text-[#858a80]">เช็กอิน {time(member.checkInTime)} · {duration(member.checkInTime)}</p></div></div>
+      <div className="flex items-center gap-3"><span className="text-xs font-medium">{money(member.amountSatang)}</span>{showCheckoutActions && <button onClick={() => onCheckout(group, member)} className="rounded-lg border border-[#dfe5db] bg-white px-3 py-2 text-xs font-semibold text-[#315b43] hover:bg-[#edf4eb]">เช็กเอาต์รายคน</button>}</div>
     </li>)}</ul>
+    {showCheckoutActions && <div className="mt-4 flex justify-end"><button onClick={() => onCheckout(group)} className="flex items-center gap-2 rounded-lg bg-[#315b43] px-4 py-2.5 text-xs font-semibold text-white hover:bg-[#244833]">เช็กเอาต์ทั้งกลุ่ม <Icon name="arrow" size={14} /></button></div>}
   </article>;
 }
 
-function CheckoutModal({ group, selectedSessionIds, confirmed, busy, onConfirm, onClose, onSubmit }: { group: Group; selectedSessionIds: string[]; confirmed: boolean; busy: boolean; onConfirm: (value: boolean) => void; onClose: () => void; onSubmit: () => void }) {
-  const selectedMembers = group.tags.filter((member) => selectedSessionIds.includes(member.sessionId));
-  const selectedTotal = selectedMembers.reduce((total, member) => total + member.amountSatang, 0);
-  if (selectedMembers.length === 0) return null;
+function CheckoutModal({ target, confirmed, busy, onConfirm, onClose, onSubmit }: { target: CheckoutTarget; confirmed: boolean; busy: boolean; onConfirm: (value: boolean) => void; onClose: () => void; onSubmit: () => void }) {
+  const amount = target.member?.amountSatang ?? target.group.amountSatang;
   return <div className="modal-backdrop fixed inset-0 z-40 flex items-center justify-center p-4" onMouseDown={(event) => { if (event.target === event.currentTarget) onClose(); }}>
-    <section role="dialog" aria-modal="true" aria-labelledby="checkout-title" className="w-full max-w-lg rounded-2xl bg-white p-6 shadow-2xl">
-      <div className="flex items-start justify-between"><div><h2 id="checkout-title" className="text-lg font-bold">รายละเอียดกลุ่ม {group.groupId}</h2><p className="mt-1 text-xs text-[#858a80]">สแกนสมาชิกคนอื่นในกลุ่มเพื่อเลือกเพิ่มก่อนยืนยันเช็กเอาต์</p></div><button aria-label="ปิด" onClick={onClose} className="rounded-lg p-2 text-[#858a80] hover:bg-[#f4f5f0]"><Icon name="close" size={17} /></button></div>
-      <ul className="mt-5 max-h-[45vh] space-y-2 overflow-y-auto">{group.tags.map((member) => { const selected = selectedSessionIds.includes(member.sessionId); return <li key={member.sessionId} className={`flex items-center justify-between gap-3 rounded-xl px-3 py-3 ${selected ? 'bg-[#eaf4e8] ring-2 ring-[#86aa80]' : 'bg-[#f7f8f5]'}`}><div><p className="text-sm font-medium">{member.label || `ชิป ${member.tagId.slice(-6)}`}{selected && <span className="ml-2 rounded-full bg-[#dcebd9] px-2 py-0.5 text-[10px] font-semibold text-[#315b43]">เลือกเช็กเอาต์</span>}</p><p className="mt-1 text-[11px] text-[#858a80]">เช็กอิน {time(member.checkInTime)} · {duration(member.checkInTime)}</p></div><strong className="shrink-0 text-sm">{money(member.amountSatang)}</strong></li>; })}</ul>
-      <div className="mt-4 flex items-end justify-between rounded-xl bg-[#f6f7f3] p-4"><span className="text-sm text-[#747b71]">ยอดของ {selectedMembers.length} คนที่เลือก</span><strong className="text-2xl text-[#315b43]">{money(selectedTotal)}</strong></div>
-      <label className="mt-4 flex cursor-pointer items-start gap-3 rounded-xl border border-[#e5e8e1] p-3.5"><input type="checkbox" checked={confirmed} disabled={busy} onChange={(event) => onConfirm(event.target.checked)} className="mt-0.5 h-4 w-4 accent-[#315b43]" /><span className="text-xs leading-5">ลูกค้าตรวจสอบยอดของสมาชิกที่เลือกและยืนยันแล้ว</span></label>
-      <div className="mt-5 flex gap-2"><button disabled={busy} onClick={onClose} className="h-10 flex-1 rounded-xl border border-[#e5e8e1] text-xs font-semibold text-[#747b71] hover:bg-[#f7f8f4]">ปิด</button><button disabled={!confirmed || busy} onClick={onSubmit} className="h-10 flex-1 rounded-xl bg-[#315b43] text-xs font-semibold text-white hover:bg-[#244833] disabled:cursor-not-allowed disabled:bg-[#aeb9ad]">{busy ? 'กำลังบันทึก…' : `ยืนยันเช็กเอาต์ ${selectedMembers.length} คน`}</button></div>
+    <section role="dialog" aria-modal="true" aria-labelledby="checkout-title" className="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl">
+      <div className="flex items-start justify-between"><div><h2 id="checkout-title" className="text-lg font-bold">ยืนยันการเช็กเอาต์</h2><p className="mt-1 text-xs text-[#858a80]">ตรวจสอบยอดกับลูกค้าก่อนบันทึก</p></div><button aria-label="ปิด" onClick={onClose} className="rounded-lg p-2 text-[#858a80] hover:bg-[#f4f5f0]"><Icon name="close" size={17} /></button></div>
+      <div className="mt-5 rounded-xl bg-[#f6f7f3] p-4"><p className="text-xs text-[#747b71]">{target.member ? 'เช็กเอาต์รายคน' : 'เช็กเอาต์ทั้งกลุ่ม'} · กลุ่ม {target.group.groupId}</p>{target.member && <p className="mt-2 font-medium">{target.member.label || `ชิป ${target.member.tagId.slice(-6)}`}</p>}<div className="mt-4 flex items-end justify-between border-t border-[#e4e8df] pt-3"><span className="text-sm text-[#747b71]">ยอดที่ Backend คำนวณ</span><strong className="text-2xl text-[#315b43]">{money(amount)}</strong></div></div>
+      <label className="mt-4 flex cursor-pointer items-start gap-3 rounded-xl border border-[#e5e8e1] p-3.5"><input type="checkbox" checked={confirmed} disabled={busy} onChange={(event) => onConfirm(event.target.checked)} className="mt-0.5 h-4 w-4 accent-[#315b43]" /><span className="text-xs leading-5">ลูกค้าตรวจสอบยอดและยืนยันจำนวนเงินนี้แล้ว</span></label>
+      <p className="mt-3 text-[11px] leading-5 text-[#858a80]">ระบบจะส่งยอดที่แสดงให้ Backend ตรวจซ้ำ หากยอดเปลี่ยนต้องให้ลูกค้ายืนยันใหม่</p>
+      <div className="mt-5 flex gap-2"><button disabled={busy} onClick={onClose} className="h-10 flex-1 rounded-xl border border-[#e5e8e1] text-xs font-semibold text-[#747b71] hover:bg-[#f7f8f4]">ยกเลิก</button><button disabled={!confirmed || busy} onClick={onSubmit} className="h-10 flex-1 rounded-xl bg-[#315b43] text-xs font-semibold text-white hover:bg-[#244833] disabled:cursor-not-allowed disabled:bg-[#aeb9ad]">{busy ? 'กำลังบันทึก…' : 'ยืนยันเช็กเอาต์'}</button></div>
     </section>
   </div>;
 }
