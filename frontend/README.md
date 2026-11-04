@@ -19,6 +19,33 @@ Create `frontend/.env.local` with the Backend URL:
 API_BASE_URL=https://buebanana.onrender.com
 ```
 
+## Deploy the Staff frontend on Render
+
+This app uses Next.js API routes and a server-side event bridge, so deploy it as a **Node.js Web Service**
+instead of a static site or Netlify Drop. Render supports full Next.js apps as web services; Netlify Drop is
+for manually publishing static files.
+
+In Render, create a Web Service from the `ThanarukTK/BueBanana` repository with:
+
+| Setting | Value |
+|---|---|
+| Root Directory | `frontend` |
+| Runtime | `Node` |
+| Build Command | `npm ci && npm run build` |
+| Start Command | `npm start` |
+
+Set these server-side environment variables in the Render dashboard, using the values for the deployed
+Backend and test staff account:
+
+- `API_BASE_URL=https://buebanana.onrender.com`
+- `STAFF_USERNAME`, `STAFF_PASSWORD`, `STAFF_DISPLAY_NAME`, `STAFF_ROLE`
+- `STAFF_API_TOKEN`, `STAFF_ID`, `SESSION_SECRET`
+- `AUTO_LOGIN_STAFF=true` only for the temporary no-login test; while enabled, anyone who can open the
+  public frontend gets the configured staff session. Remove or set it to `false` after testing.
+
+The `start` script leaves the port to Render's `PORT` environment variable. Keep all these values in the
+host's environment settings; do not add real credentials to GitHub.
+
 The login route keeps the Backend's staff credential out of the browser: the console verifies the
 operator, then stores either the Backend's JWT (once its staff-account API exists) or a signed
 test-phase session in an HttpOnly cookie. Nothing in the token is readable by browser JavaScript.
@@ -40,6 +67,11 @@ in the UI.
 
 The Backend still has no staff-account API (`POST /api/v1/auth/staff/login` returns 404), so the console
 signs staff in against a **static credential in `frontend/.env`** until that lands:
+
+- For local testing, set `AUTO_LOGIN_DEV=true` in `frontend/.env.local` to issue the configured test
+  staff session automatically when the app opens. For a temporary hosted test, set
+  `AUTO_LOGIN_STAFF=true` in the frontend host's environment. Anyone who can reach that hosted site
+  will receive the configured staff session while this setting is enabled.
 
 - `STAFF_USERNAME` / `STAFF_PASSWORD` / `STAFF_DISPLAY_NAME` / `STAFF_ROLE`, or several accounts via
   `STAFF_ACCOUNTS=user:password:role:display;...` (`role` is `admin` or `staff`).
