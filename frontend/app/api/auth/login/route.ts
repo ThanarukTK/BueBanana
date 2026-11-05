@@ -17,7 +17,11 @@ export const dynamic = 'force-dynamic';
  */
 export async function POST(request: NextRequest) {
   const origin = request.headers.get('origin');
-  if (origin && origin !== request.nextUrl.origin) {
+  // CSRF guard: a present Origin must match the host this request was served to. Compare against
+  // the raw Host header (scheme://host), NOT nextUrl.origin — Next normalizes that to "localhost",
+  // which 403s legitimate clients that connect via 127.0.0.1 or a deployed hostname.
+  const host = request.headers.get('host');
+  if (origin && host && origin !== `${request.nextUrl.protocol}//${host}`) {
     return NextResponse.json({ error: { message: 'คำขอไม่ถูกต้อง' } }, { status: 403 });
   }
 
