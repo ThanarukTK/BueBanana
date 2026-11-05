@@ -1,6 +1,6 @@
 'use client';
 import { useState } from 'react';
-import { useTheme } from 'next-themes';
+import { useTheme } from './theme-provider';
 
 const LABELS: Record<string, string> = { light: '☀️ กลางวัน', dark: '🌙 กลางคืน', system: '🖥️ ตามระบบ' };
 
