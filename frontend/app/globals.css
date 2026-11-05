@@ -14,3 +14,55 @@ button { cursor: pointer; }
 .scrollbar-none::-webkit-scrollbar { display: none; }
 .scrollbar-none { scrollbar-width: none; }
 @keyframes wave { 0%, 100% { transform: rotate(0); } 25% { transform: rotate(16deg); } 75% { transform: rotate(-8deg); } }
+
+/* --- Login & admin console theme tokens (customer pages keep the vars above) --- */
+:root {
+  --bg: #f7f8f4;
+  --surface: #ffffff;
+  --surface-2: #f4f5f1;
+  --surface-3: #eef0ea;
+  --border: #e6e9e1;
+  --border-2: #dfe4dc;
+  --text: #222820;
+  --text-strong: #101411;
+  --text-muted: #7e857b;
+  --text-faint: #898f85;
+  --accent: #315b43;
+  --accent-hover: #244833;
+  --accent-ink: #ffffff;
+  --accent-soft: #edf3e9;
+  --cyan: #0e7490;
+  --green: #2f7d4f;
+  --red: #b33a2e;
+  --amber: #8a6113;
+  --danger-bg: #fff5f3;
+  --danger-ink: #984e44;
+  --danger-border: #f0d0cc;
+  --warn-bg: #fff4d7;
+  --warn-ink: #765d20;
+}
+.dark {
+  --bg: #0d1117;
+  --surface: #11161d;
+  --surface-2: #161b22;
+  --surface-3: #1c2431;
+  --border: #21262d;
+  --border-2: #30363d;
+  --text: #e6edf3;
+  --text-strong: #f0f6fc;
+  --text-muted: #8b949e;
+  --text-faint: #6e7681;
+  --accent: #a78bfa;
+  --accent-hover: #c4b5fd;
+  --accent-ink: #0d1117;
+  --accent-soft: #201b3a;
+  --cyan: #a5f3fc;
+  --green: #4e9b65;
+  --red: #e5534b;
+  --amber: #e0b75c;
+  --danger-bg: #3a1d1a;
+  --danger-ink: #ff8a80;
+  --danger-border: #512724;
+  --warn-bg: #332a13;
+  --warn-ink: #e0b75c;
+}
