@@ -62,8 +62,8 @@ function money(satang: number) {
 function time(iso: string) {
   return new Intl.DateTimeFormat('th-TH', { hour: '2-digit', minute: '2-digit', second: '2-digit' }).format(new Date(iso));
 }
-function duration(iso: string) {
-  const minutes = Math.max(0, Math.floor((Date.now() - Date.parse(iso)) / 60_000));
+function duration(iso: string, now = Date.now()) {
+  const minutes = Math.max(0, Math.floor((now - Date.parse(iso)) / 60_000));
   return minutes < 60 ? `${minutes} นาที` : `${Math.floor(minutes / 60)} ชม. ${minutes % 60} นาที`;
 }
 
@@ -371,11 +371,17 @@ function GroupCard({ group, scan, showCheckoutActions, onCheckout }: { group: Gr
 }
 
 function CheckoutModal({ target, confirmed, busy, onConfirm, onClose, onSubmit }: { target: CheckoutTarget; confirmed: boolean; busy: boolean; onConfirm: (value: boolean) => void; onClose: () => void; onSubmit: () => void }) {
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    const timer = window.setInterval(() => setNow(Date.now()), 10_000);
+    return () => window.clearInterval(timer);
+  }, []);
   const amount = target.member?.amountSatang ?? target.group.amountSatang;
+  const members = target.member ? [target.member] : target.group.tags;
   return <div className="modal-backdrop fixed inset-0 z-40 flex items-center justify-center p-4" onMouseDown={(event) => { if (event.target === event.currentTarget) onClose(); }}>
     <section role="dialog" aria-modal="true" aria-labelledby="checkout-title" className="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl">
       <div className="flex items-start justify-between"><div><h2 id="checkout-title" className="text-lg font-bold">ยืนยันการเช็กเอาต์</h2><p className="mt-1 text-xs text-[#858a80]">ตรวจสอบยอดกับลูกค้าก่อนบันทึก</p></div><button aria-label="ปิด" onClick={onClose} className="rounded-lg p-2 text-[#858a80] hover:bg-[#f4f5f0]"><Icon name="close" size={17} /></button></div>
-      <div className="mt-5 rounded-xl bg-[#f6f7f3] p-4"><p className="text-xs text-[#747b71]">{target.member ? 'เช็กเอาต์รายคน' : 'เช็กเอาต์ทั้งกลุ่ม'} · กลุ่ม {target.group.groupId}</p>{target.member && <p className="mt-2 font-medium">{target.member.label || `ชิป ${target.member.tagId.slice(-6)}`}</p>}<div className="mt-4 flex items-end justify-between border-t border-[#e4e8df] pt-3"><span className="text-sm text-[#747b71]">ยอดที่ Backend คำนวณ</span><strong className="text-2xl text-[#315b43]">{money(amount)}</strong></div></div>
+      <div className="mt-5 rounded-xl bg-[#f6f7f3] p-4"><p className="text-xs text-[#747b71]">{target.member ? 'เช็กเอาต์รายคน' : 'เช็กเอาต์ทั้งกลุ่ม'} · กลุ่ม {target.group.groupId}</p><ul className="mt-3 max-h-60 space-y-2 overflow-y-auto">{members.map((member) => <li key={member.sessionId} className="flex items-center justify-between gap-3 rounded-lg bg-white p-3"><div><p className="text-sm font-medium">{member.label || `ชิป ${member.tagId.slice(-6)}`}</p><p className="mt-1 text-xs text-[#747b71]">เช็กอิน {time(member.checkInTime)} · เล่นแล้ว {duration(member.checkInTime, now)}</p></div><span className="shrink-0 text-sm font-semibold">{money(member.amountSatang)}</span></li>)}</ul><p className="mt-2 text-[11px] text-[#858a80]">ยอดรายคนแสดงตามข้อมูลล่าสุดที่โหลด เมื่อยืนยัน Backend จะตรวจสอบยอดอีกครั้ง</p><div className="mt-4 flex items-end justify-between border-t border-[#e4e8df] pt-3"><span className="text-sm text-[#747b71]">ยอดที่ Backend คำนวณ</span><strong className="text-2xl text-[#315b43]">{money(amount)}</strong></div></div>
       <label className="mt-4 flex cursor-pointer items-start gap-3 rounded-xl border border-[#e5e8e1] p-3.5"><input type="checkbox" checked={confirmed} disabled={busy} onChange={(event) => onConfirm(event.target.checked)} className="mt-0.5 h-4 w-4 accent-[#315b43]" /><span className="text-xs leading-5">ลูกค้าตรวจสอบยอดและยืนยันจำนวนเงินนี้แล้ว</span></label>
       <p className="mt-3 text-[11px] leading-5 text-[#858a80]">ระบบจะส่งยอดที่แสดงให้ Backend ตรวจซ้ำ หากยอดเปลี่ยนต้องให้ลูกค้ายืนยันใหม่</p>
       <div className="mt-5 flex gap-2"><button disabled={busy} onClick={onClose} className="h-10 flex-1 rounded-xl border border-[#e5e8e1] text-xs font-semibold text-[#747b71] hover:bg-[#f7f8f4]">ยกเลิก</button><button disabled={!confirmed || busy} onClick={onSubmit} className="h-10 flex-1 rounded-xl bg-[#315b43] text-xs font-semibold text-white hover:bg-[#244833] disabled:cursor-not-allowed disabled:bg-[#aeb9ad]">{busy ? 'กำลังบันทึก…' : 'ยืนยันเช็กเอาต์'}</button></div>
