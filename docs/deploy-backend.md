@@ -35,7 +35,6 @@ supported.
    |---|---|
    | `STORE` | `postgres` |
    | `DATABASE_URL` | the Supabase **shared pooler, session mode** string |
-   | `TAG_UID_PEPPER` | the same pepper as local — **do not change it**, stored UID hashes depend on it |
    | `DEVICE_API_KEY` | replace the dev value with a private one (the reader's key) |
    | `STAFF_API_TOKEN` | replace the dev value with a private one (the demo's staff token) |
 
@@ -58,7 +57,7 @@ behaviour (no spin-down if you keep one machine running), same artifact.
 
 ```bash
 fly launch --dockerfile backend/Dockerfile --no-deploy
-fly secrets set STORE=postgres DATABASE_URL=... TAG_UID_PEPPER=... DEVICE_API_KEY=... STAFF_API_TOKEN=...
+fly secrets set STORE=postgres DATABASE_URL=... DEVICE_API_KEY=... STAFF_API_TOKEN=...
 fly deploy
 ```
 

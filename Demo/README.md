@@ -130,7 +130,7 @@ NFC_boardgame_reader/
 │   │               # realtime.ts (socket payloads), config.ts (env), repository.ts (store seam),
 │   │               # stores/ (memory-store.ts | postgres-store.ts), db/ (migrate, connect, retention)
 │   ├── migrations/ # 0001_init.sql — schema, constraints, append-only audit trigger
-│   └── .env.example# STORE, DATABASE_URL/DATABASE_PASSWORD, TAG_UID_PEPPER, keys
+│   └── .env.example# STORE, DATABASE_URL/DATABASE_PASSWORD, keys
 ├── firebase.json   # emulator config for the optional Firestore demo backend
 ├── firestore.rules # demo-only rules: authenticated callers, append-only audit
 ├── docs/           # documentation set: rule.md, proposal.md, backlog.md, designdraft.md,

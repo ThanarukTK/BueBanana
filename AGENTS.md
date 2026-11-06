@@ -79,7 +79,7 @@ NFC_boardgame_reader/
 │   ├── src/app.ts     #   routes + /ws/reader + /ws/admin, auth, CORS (dev)
 │   ├── src/domain.ts  #   pricing, group projection, UID hashing
 │   ├── src/realtime.ts#   WebSocket topics + event payloads (§3.2 / §4.2)
-│   ├── src/config.ts  #   environment → Config (STORE, DATABASE_URL, TAG_UID_PEPPER, keys)
+│   ├── src/config.ts  #   environment → Config (STORE, DATABASE_URL, keys; UID hashing needs no secret)
 │   ├── src/repository.ts# repository seam: memory | postgres behind one transaction API
 │   ├── src/stores/    #   memory-store.ts (default) | postgres-store.ts
 │   ├── src/db/        #   migrate.ts, connect.ts, retention.ts
@@ -125,7 +125,7 @@ NFC_boardgame_reader/
   earlier demo plumbing. Nothing but `Demo/sync.js` talks to a backend, and the UI never prices a bill
   the backend has not reported.
 - **No secrets in the repo:** never commit API keys, Supabase service keys, or credentials. The backend
-  reads `STORE`, `DATABASE_URL` and `TAG_UID_PEPPER` from `backend/.env` (gitignored; `.env.example` is
+  reads `STORE` and `DATABASE_URL` from `backend/.env` (gitignored; `.env.example` is
   committed with placeholders). On this team repo **every teammate provisions their own `.env`** — a
   connection string or service key must not travel through the repo, an issue tracker, or a chat window.
   The frontend and the ESP32 never receive database credentials: the backend is the only client.

@@ -49,23 +49,23 @@ STORE=postgres
 DATABASE_URL=postgresql://postgres.<ref>:[YOUR-PASSWORD]@aws-0-<region>.pooler.supabase.com:5432/postgres
 # Or the password on its own line — it is percent-encoded for you, so @ : / ? # & are safe:
 DATABASE_PASSWORD=<database password>
-TAG_UID_PEPPER=<long random string>
 
 bun run migrate     # applies backend/migrations/*.sql, records them in schema_migrations
 bun run dev:postgres
 bun run retention   # scheduled job: purge audit entries past the 90-day window
 ```
 
-Two things to get right, both of which fail in confusing ways:
+Two things to know when setting this up:
 
 - **Copy the "Shared pooler, session mode" string**, not the "Direct connection" one the Supabase
   dashboard lists first: the direct host is IPv6-only on Free plans and simply fails to connect from an
   IPv4-only network. Port 6543 (transaction mode) also works, but the driver turns prepared statements
   off automatically for it.
-- **Set `TAG_UID_PEPPER` before the first row is written.** Raw NFC UIDs are stored as
-  HMAC-SHA256(uid, pepper); a bare hash of a low-entropy UID is enumerable back to the card, and
-  re-keying later means rewriting every record. The server refuses to start on the Postgres path with
-  the development pepper.
+- **No UID secret to manage any more.** Raw NFC UIDs are stored as a plain SHA-256 of the normalised
+  UID; `TAG_UID_PEPPER` was removed as unnecessary and as the cause of a hashing defect, so a leftover
+  value in `.env` is ignored. A plain hash of a low-entropy UID is enumerable back to the card if the
+  table leaks — accepted risk, recorded as R11 in `docs/test-plan-v1.3.docx`; re-introduce a keyed hash
+  before the café stores customer-linked card data.
 
 `docs/supabase-migration-plan.md` has the schema, the integrity guards and the verification results.
 
@@ -182,7 +182,7 @@ code change: `Demo/sync.js` has one `rest` backend and the earlier `firestore` p
 
 ## Compliance boundary
 
-The implementation applies the PDPA minimisation rule by storing only a peppered HMAC-SHA256 of the raw
+The implementation applies the PDPA minimisation rule by storing only a SHA-256 hash of the raw
 UID and exposing opaque IDs. Check-in, checkout, staff actions, and audit-log access are recorded without
 raw UIDs or credentials. With `STORE=postgres` the audit log is append-only **in the database** (trigger)
 and retained by a scheduled job, and the identity index, row locks and transactions close the

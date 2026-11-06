@@ -43,7 +43,7 @@ replaces it without changing a single endpoint, payload or WebSocket message.
 
 | Table | Holds | Notes |
 |---|---|---|
-| `tags` | registered card identities | `uid_hash` (HMAC, see below), opaque `tag_id`, label, status |
+| `tags` | registered card identities | `uid_hash` (SHA-256 — see the superseded note below), opaque `tag_id`, label, status |
 | `groups` | one row per visit/party | status, `start_time` |
 | `sessions` | one row per member per group | check-in/out times, status |
 | `receipts` | confirmed check-out evidence | amount (satang), staff, confirmed-at, bill version (ETA §9) |
@@ -78,6 +78,13 @@ change, snake_case columns mapped to camelCase API fields in the store layer.
 
 ## UID hashing — decided: HMAC with a pepper, before the first row
 
+> **Superseded 2026-11-06.** The pepper was later removed at the owner's request: it was unnecessary
+> for the threat model this café has, and it caused a hashing defect. `hashTagUid()` now stores a plain
+> `sha256(normalisedUid)`; `TAG_UID_PEPPER` is neither read nor required and a leftover value is
+> ignored. The residual risk (a leaked tag table could be reversed to a card) is accepted and recorded
+> as R11 in `docs/test-plan-v1.3.docx`. Keep this section as the decision record; re-introduce a keyed
+> hash before any customer-linked card data is stored.
+
 `domain.ts` currently stores `sha256(rawUid)`. An NFC UID is low-entropy (a few bytes), so that hash is
 enumerable back to the card and provides no protection. Switching to
 `HMAC-SHA256(key=TAG_UID_PEPPER, msg=normalisedUid)` must happen **before any rows are written** — after
@@ -99,7 +106,7 @@ the **Shared pooler, session mode** string instead:
 STORE=postgres
 DATABASE_URL=postgresql://postgres.<ref>:[YOUR-PASSWORD]@aws-0-<region>.pooler.supabase.com:5432/postgres
 DATABASE_PASSWORD=<database password>
-TAG_UID_PEPPER=<long random string>
+# TAG_UID_PEPPER — removed; no longer read, a leftover value is ignored (see the superseded note below)
 ```
 
 The dashboard's `[YOUR-PASSWORD]` token can stay in the URL: the backend substitutes and percent-encodes
@@ -112,6 +119,11 @@ and never travel through a chat window — each teammate provisions their own `.
 the ESP32 never get database credentials**; the backend is the only client.
 
 ## Verification checklist (phase 2 exit criteria)
+
+> **Historical results.** The tables below record what was true when the migration was verified
+> (peppered HMAC, per-started-minute pricing, 18 tests). Three things have changed since: UIDs are now
+> stored as a plain SHA-256 (see the superseded note above), bills are priced in whole-hour blocks
+> capped at ฿150 (hour 5), and the suite is 20 tests. Do not re-use the figures below as current.
 
 Ran against PostgreSQL 16 in a local container (`docker run -d --name nfc-pg -e POSTGRES_PASSWORD=…
 -e POSTGRES_DB=nfc -p 5433:5432 postgres:16-alpine`), which is the same engine Supabase runs — only the

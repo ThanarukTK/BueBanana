@@ -369,7 +369,7 @@ requires `/api/v2` and a firmware update rollout plan, not a silent change to `v
 
 Staff can register a physical card directly on the reader instead of going through the staff web app:
 the firmware reads a UID in its **Register card** mode and POSTs it here, device-authenticated
-(`X-Device-Key`). The endpoint mirrors `POST /api/v1/nfc-tags` (§4.1): the raw UID is HMAC-peppered
+(`X-Device-Key`). The endpoint mirrors `POST /api/v1/nfc-tags` (§4.1): the raw UID is hashed (SHA-256) before storage
 and never returned, and re-registering the same UID returns the existing identity (idempotent).
 
 ```json
