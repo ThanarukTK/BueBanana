@@ -28,7 +28,7 @@ const errorBody = (code: string, message: string, details?: Record<string, unkno
 });
 
 // ---------------------------------------------------------------------------------------------
-// Auth (`docs/api-convention.md` §3)
+// Auth (`docs/backend-convention/api-convention.md` §3)
 // ---------------------------------------------------------------------------------------------
 
 function staffIdFrom(request: Request, config: Config): string | null {
@@ -151,7 +151,7 @@ export function createApp(options: AppOptions = {}) {
     })
 
     // -------------------------------------------------------------------------------------
-    // Reader: every tap, no exceptions (`docs/api-contract.md` §3.1)
+    // Reader: every tap, no exceptions (`docs/backend-convention/api-contract.md` §3.1)
     // -------------------------------------------------------------------------------------
     .post('/api/v1/scans', async ({ request, body, set, server }) => {
       if (!deviceAuthorized(request, null, config)) {
@@ -274,7 +274,7 @@ export function createApp(options: AppOptions = {}) {
     })
 
     // -------------------------------------------------------------------------------------
-    // Staff: floor view + check-out (`docs/api-contract.md` §4.1)
+    // Staff: floor view + check-out (`docs/backend-convention/api-contract.md` §4.1)
     // -------------------------------------------------------------------------------------
     .get('/api/v1/groups', async ({ request, query, set }) => {
       const staffId = staffIdFrom(request, config);

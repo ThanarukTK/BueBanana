@@ -66,7 +66,7 @@ const toReceipt = (row: ReceiptRow): CheckoutReceipt => ({
  *   the amount check and the write — the double-charge race.
  *
  * Taps across *different* cards are not serialised: there is one physical reader, so taps arrive one at
- * a time (`docs/api-contract.md` §1). A second reader would need a global scan lock as well.
+ * a time (`docs/backend-convention/api-contract.md` §1). A second reader would need a global scan lock as well.
  */
 class PostgresTransaction implements Transaction {
   constructor(private readonly tx: Tx) {}

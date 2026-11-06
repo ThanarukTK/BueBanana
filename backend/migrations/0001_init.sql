@@ -1,9 +1,9 @@
 -- 0001_init.sql — schema for the NFC boardgame café backend.
 --
 -- Source of truth for the database: tables, indexes, triggers and retention live here as plain SQL so
--- the identical files run against a local container and against Supabase (`docs/supabase-migration-plan.md`).
+-- the identical files run against a local container and against Supabase (`docs/backend-convention/supabase-migration-plan.md`).
 --
--- Conventions (`docs/api-convention.md` §7): money as integer satang (never float), timestamptz for every
+-- Conventions (`docs/backend-convention/api-convention.md` §7): money as integer satang (never float), timestamptz for every
 -- timestamp, app-generated UUIDs for exposed IDs so the wire contract's ID format does not change with the
 -- storage, snake_case columns mapped to camelCase API fields in the store layer.
 
@@ -14,7 +14,7 @@ create table if not exists schema_migrations (
 
 -- Registered card identities (PB-15). `uid_hash` is HMAC-SHA256(rawUid, TAG_UID_PEPPER) computed by the
 -- backend: the raw UID is never stored, and the pepper keeps the hash from being enumerable back to a
--- physical card (PDPA, docs/rule.md).
+-- physical card (PDPA, docs/compliance/rule.md).
 create table if not exists tags (
   tag_id      uuid primary key,
   uid_hash    text not null unique,
@@ -106,7 +106,7 @@ create table if not exists scan_dedupe (
  *
  * Honest limit: the backend connects as the table owner on Supabase's `postgres` role, so this trigger
  * is tamper-*evident*, not tamper-*proof* — the owner could drop it. A non-owner application role is
- * the hardening step after the demo (`docs/supabase-migration-plan.md`).
+ * the hardening step after the demo (`docs/backend-convention/supabase-migration-plan.md`).
  */
 create or replace function audit_log_append_only() returns trigger
 language plpgsql as $$
@@ -123,7 +123,7 @@ create trigger audit_log_no_change
   for each row execute function audit_log_append_only();
 
 /**
- * Retention: `docs/rule.md` requires traffic logs kept at least 90 days, deleted after that unless a
+ * Retention: `docs/compliance/rule.md` requires traffic logs kept at least 90 days, deleted after that unless a
  * lawful hold applies. This is the only supported deletion path, and it is a scheduled job — never an
  * API route (`api-convention.md` §8.2). Run it with `bun run retention`.
  */

@@ -2,7 +2,7 @@
  * Environment resolution, in one place.
  *
  * Development defaults exist so a fresh clone runs with **no** `.env` and no database
- * (`docs/backend-mvp.md`). Anything that would be unsafe to default — a database URL, the UID pepper —
+ * (`docs/backend-convention/backend-mvp.md`). Anything that would be unsafe to default — a database URL, the UID pepper —
  * is required explicitly on the Postgres path and the server refuses to start without it.
  */
 

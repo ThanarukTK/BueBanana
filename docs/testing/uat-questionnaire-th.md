@@ -1,6 +1,6 @@
 # UAT Instruments — Consent, Scenarios, SUS & UTAUT2 (TH/EN)
 
-Companion to `docs/test-plan.docx` §4–§5. All instruments are delivered through **one Google Form**
+Companion to `docs/testing/test-plan.docx` §4–§5. All instruments are delivered through **one Google Form**
 (sections A–K); print §5 (scenario cards) and §6 (observer sheet) on paper. Every form and sheet uses
 the participant code `P01…P15` only.
 
@@ -192,7 +192,7 @@ behavioural evidence. Report Cronbach's α per construct, and note that with n =
 | `TC_IDs_touched` | e.g. `TC-CI-01, TC-CI-02, TC-CO-01, TC-CO-05` |
 | `notes_verbatim` | quote in the customer's own words, tagged with the participant code |
 
-Anything that fails goes into `docs/defect-log.csv` with the matching `TC_ID` **before** the next
+Anything that fails goes into `docs/test-log/defect-log.csv` with the matching `TC_ID` **before** the next
 session starts.
 
 ---

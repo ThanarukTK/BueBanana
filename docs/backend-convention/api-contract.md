@@ -669,7 +669,7 @@ WSS /ws/reader
 
 ## 8. Implementation notes — MVP backend
 
-`docs/backend-mvp.md` documents the running backend. Three points where the MVP (deliberately) goes
+`docs/backend-convention/backend-mvp.md` documents the running backend. Three points where the MVP (deliberately) goes
 *beyond* the letter of this contract, all of them additions rather than changes, which §3.4 permits
 inside `/api/v1`:
 

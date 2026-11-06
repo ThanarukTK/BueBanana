@@ -1,6 +1,6 @@
 # Test artifacts — how to use these files
 
-Companion to `docs/test-plan.docx` (UTAUT2). Three spreadsheets plus one printable form.
+Companion to `docs/testing/test-plan.docx` (UTAUT2). Three spreadsheets plus one printable form.
 
 | File | What it is | Who fills it | When |
 |---|---|---|---|
@@ -19,7 +19,7 @@ the column names.
 |---|---|
 | `TC_ID` | do not change — defects and the traceability matrix reference it |
 | `Phase` | `1` = internal/staff only, `1,2` = also run with customers |
-| `Flow` / `Requirement` | flow id from plan §1.2; PB ids from `docs/backlog.md` |
+| `Flow` / `Requirement` | flow id from plan §1.2; PB ids from `docs/planning/backlog.md` |
 | `Preconditions` | system state before step 1 — this is what makes a defect reproducible |
 | `Steps` | numbered, one action each, no "verify it works" |
 | `Test_data` | the concrete card id, amount, elapsed time |
@@ -65,7 +65,7 @@ Severity/priority definitions and the lifecycle are in plan §9. A defect is clo
 
 1. Fill the log **within 24 hours** of the session; recall decays faster than you expect.
 2. Never edit a `PASS` row back to blank — if a retest fails, note the new defect id in `Notes`.
-3. Photos of receipts go in `docs/evidence/<participant_id>/`, named after the `TC_ID`.
+3. Photos of receipts go in `docs/test-log/evidence/<participant_id>/`, named after the `TC_ID`.
 4. No real customer name, phone number, email, or raw NFC UID in any of these files (PDPA — see
    `rule.md`).
 5. A response completed in under 2 minutes is a straight-lining signature — check it before you

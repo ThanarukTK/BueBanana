@@ -16,7 +16,7 @@ if (config.store === 'memory') {
   console.log('Data is cleared when the server restarts. Set STORE=postgres in backend/.env for durability.');
 }
 console.log('');
-console.log('Channels (docs/api-contract.md):');
+console.log('Channels (docs/backend-convention/api-contract.md):');
 console.log(`  reader  REST  POST ${base}/api/v1/scans   (header X-Device-Key: ${config.deviceKey})`);
 console.log(`  reader  WSS   ws://localhost:${config.port}/ws/reader?deviceKey=${config.deviceKey}`);
 console.log(`  staff   WSS   ws://localhost:${config.port}/ws/admin?token=${config.staffToken}`);

@@ -1,5 +1,5 @@
 /**
- * Realtime layer — the two WebSocket channels of `docs/api-contract.md` (§3.2 reader, §4.2 admin)
+ * Realtime layer — the two WebSocket channels of `docs/backend-convention/api-contract.md` (§3.2 reader, §4.2 admin)
  * plus the payload shapes they carry.
  *
  * Both channels reuse the app's plain JSON envelopes: a reader push is `{ data: { screen } }` and an

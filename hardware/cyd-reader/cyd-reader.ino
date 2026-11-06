@@ -4,7 +4,7 @@
  *
  * Hardware : ESP32-2432S028 "Cheap Yellow Display" (2.8" TFT + XPT2046 touch)
  *            + PN532 NFC on I2C (DIP switch = I2C, "1 0")
- * Backend : ElysiaJS  (docs/api-contract.md §3)
+ * Backend : ElysiaJS  (docs/backend-convention/api-contract.md §3)
  *    tap   -> POST /api/v1/scans      {"rawTagUid":"<hex>"}  + X-Device-Key
  *    touch -> POST /api/v1/reader/dismiss
  *    push  -> WS  /ws/reader?deviceKey=<key>   (fallback: GET /reader/state)

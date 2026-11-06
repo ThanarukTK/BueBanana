@@ -9,7 +9,7 @@ authoritative shared context for every AI assistant (Claude, Copilot, Cursor, Co
 
 1. **Read [`AGENTS.md`](./AGENTS.md) in full — before any other action.**
 2. Follow the **required reading order** in `AGENTS.md` §1.
-3. **Read [`docs/rule.md`](./docs/rule.md)** before writing any code that touches user data, user
+3. **Read [`docs/compliance/rule.md`](./docs/compliance/rule.md)** before writing any code that touches user data, user
    actions, NFC identity, sessions, billing, payments, logs, or staff actions. It contains binding
    legal rules (PDPA, Computer Crime Act §26, Electronic Transactions Act) — not suggestions.
 

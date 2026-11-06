@@ -13,7 +13,7 @@ import type { AuditInput, OpenGroup, ReaderOutcome, Repository, Transaction } fr
 /**
  * Development repository: everything in process memory.
  *
- * This is the credential-free path (`docs/backend-mvp.md`) — no database, no `.env`, cleared on
+ * This is the credential-free path (`docs/backend-convention/backend-mvp.md`) — no database, no `.env`, cleared on
  * restart — and it is also the reference implementation of `Transaction`: with one process and no
  * concurrency to speak of, a "transaction" is just the callback, and a roster lookup is a map walk.
  * The Postgres implementation has to earn the same guarantees with row locks; behaviour between the
@@ -22,7 +22,7 @@ import type { AuditInput, OpenGroup, ReaderOutcome, Repository, Transaction } fr
  *
  * The two coordination values (`openGroup`, `readerOutcome`) are process-local on purpose: the MVP is
  * documented as a single instance with a single physical reader. On Postgres they become a one-row
- * table, which is what makes a second instance possible — see `docs/supabase-migration-plan.md`.
+ * table, which is what makes a second instance possible — see `docs/backend-convention/supabase-migration-plan.md`.
  */
 export class MemoryStore implements Repository, Transaction {
   readonly kind = 'memory' as const;

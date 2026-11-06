@@ -13,17 +13,17 @@ must only redirect here — never duplicate or override the context.
 | # | File | Why it matters |
 |---|------|----------------|
 | 1 | `AGENTS.md` (this file) | Repo-wide context, conventions, guardrails |
-| 2 | [`docs/rule.md`](./docs/rule.md) | **Mandatory legal context** — PDPA, Computer Crime Act §26, Electronic Transactions Act. Binding constraints on any feature touching user data or user actions |
-| 3 | [`docs/proposal.md`](./docs/proposal.md) | Problem statement, target users, objectives, user-pain traceability |
-| 4 | [`docs/backlog.md`](./docs/backlog.md) | User stories `PB-01`…`PB-15` with acceptance criteria and priority |
-| 5 | [`docs/designdraft.md`](./docs/designdraft.md) | Feature list, user journey, prototype link, use-case / activity / sequence / class diagrams |
-| 6 | [`docs/structure.md`](./docs/structure.md) | Target system architecture (Frontend / Backend / Hardware / Database) |
+| 2 | [`docs/compliance/rule.md`](./docs/compliance/rule.md) | **Mandatory legal context** — PDPA, Computer Crime Act §26, Electronic Transactions Act. Binding constraints on any feature touching user data or user actions |
+| 3 | [`docs/planning/proposal.md`](./docs/planning/proposal.md) | Problem statement, target users, objectives, user-pain traceability |
+| 4 | [`docs/planning/backlog.md`](./docs/planning/backlog.md) | User stories `PB-01`…`PB-15` with acceptance criteria and priority |
+| 5 | [`docs/design/designdraft.md`](./docs/design/designdraft.md) | Feature list, user journey, prototype link, use-case / activity / sequence / class diagrams |
+| 6 | [`docs/design/structure.md`](./docs/design/structure.md) | Target system architecture (Frontend / Backend / Hardware / Database) |
 | 7 | [`Demo/README.md`](./Demo/README.md) | The current Web NFC demo: features, requirements, how to run it |
-| 8 | [`docs/backend-mvp.md`](./docs/backend-mvp.md) | The running ElysiaJS MVP: endpoints, WebSocket channels, storage modes, how the demo connects |
-| 9 | [`docs/supabase-migration-plan.md`](./docs/supabase-migration-plan.md) | Database schema, integrity guards, the Supabase connection rules, and the verification results |
+| 8 | [`docs/backend-convention/backend-mvp.md`](./docs/backend-convention/backend-mvp.md) | The running ElysiaJS MVP: endpoints, WebSocket channels, storage modes, how the demo connects |
+| 9 | [`docs/backend-convention/supabase-migration-plan.md`](./docs/backend-convention/supabase-migration-plan.md) | Database schema, integrity guards, the Supabase connection rules, and the verification results |
 
 **Rule:** if a task touches check-in/check-out, sessions, billing, payments, user identity,
-NFC tag identity, logging/audit, or staff actions, you **must read `docs/rule.md` before writing code**
+NFC tag identity, logging/audit, or staff actions, you **must read `docs/compliance/rule.md` before writing code**
 and you **must** state in your summary which rules you applied.
 
 ## 2. Project in one paragraph
@@ -47,11 +47,11 @@ fewer queues, less staff workload, and a more usable experience than the café's
 - A **group-flow demo** (`Demo/index.html` — the only demo) that drives the ElysiaJS backend
   (`backend/src`) over REST + WebSocket: a tap resolves to `waiting` / `joined` / `group`, staff check
   out one member or the whole group, bills are priced server-side, and every state change is audited.
-  Run instructions and channel details: [`docs/backend-mvp.md`](./docs/backend-mvp.md).
+  Run instructions and channel details: [`docs/backend-convention/backend-mvp.md`](./docs/backend-convention/backend-mvp.md).
 - The backend runs on either an **in-memory store** (`STORE=memory`, the default, so `bun test` and
   `bun run dev:local` need no credentials) or **Postgres** (`STORE=postgres` — Supabase; `bun run
   migrate` applies `backend/migrations/`). The HTTP contract is identical either way, and deployment is
-  covered in [`docs/deploy-backend.md`](./docs/deploy-backend.md).
+  covered in [`docs/backend-convention/deploy-backend.md`](./docs/backend-convention/deploy-backend.md).
 
 **Target architecture:**
 
@@ -64,8 +64,8 @@ fewer queues, less staff workload, and a more usable experience than the café's
 
 Storage is one env var (`STORE=memory|postgres`) behind `backend/src/repository.ts`: the schema, migrations
 and the Postgres store are in place and verified against PostgreSQL 16, and Supabase is a connection
-string plus `bun run migrate` away. See [`docs/backend-mvp.md`](./docs/backend-mvp.md) and
-[`docs/supabase-migration-plan.md`](./docs/supabase-migration-plan.md).
+string plus `bun run migrate` away. See [`docs/backend-convention/backend-mvp.md`](./docs/backend-convention/backend-mvp.md) and
+[`docs/backend-convention/supabase-migration-plan.md`](./docs/backend-convention/supabase-migration-plan.md).
 
 Data flow: NFC tag tap → ESP32 → ElysiaJS API → Supabase → status returned to ESP32 screen and Next.js UI.
 

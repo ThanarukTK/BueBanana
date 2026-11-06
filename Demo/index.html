@@ -40,7 +40,7 @@
   <script type="module">
     // All state lives behind NFCSync (see sync.js), which talks to the ElysiaJS backend (`backend/`)
     // over REST + WebSocket by default. Nothing here mutates state directly — it dispatches commands
-    // that mirror the endpoints in docs/api-contract.md §3.1 / §3.2 / §4.1.
+    // that mirror the endpoints in docs/backend-convention/api-contract.md §3.1 / §3.2 / §4.1.
     import {
       NFCSync, baht, amountFor, screenOf, staffScanOf, activeGroups, rosterOf,
       openGroupIdOf, totalBilledSatang, minutesBetween, clock, clockSeconds,
@@ -50,7 +50,7 @@
     const esc = text => String(text).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
     const labelOf = tagId => String(tagId || '').replace(/^tag_/, '');
 
-    // The reader's whole display vocabulary, as enumerated in docs/api-contract.md §3.1.
+    // The reader's whole display vocabulary, as enumerated in docs/backend-convention/api-contract.md §3.1.
     const SCREEN_COPY = {
       idle:    ['IDLE',    'Reader is idle',       'The next new card starts a new group.'],
       waiting: ['WAITING', 'Waiting for friends',  'Friends can scan within 30 seconds to join this group.'],
@@ -105,7 +105,7 @@
       const state = NFCSync.getState();
       const now = Date.now();
       // A backend failure surfaces on the reader itself, using the `error` screen the hardware
-      // vocabulary already defines (docs/api-contract.md §3.1). With no local mode there is no
+      // vocabulary already defines (docs/backend-convention/api-contract.md §3.1). With no local mode there is no
       // second UI pretending the demo still works. The staff view is driven by the `/ws/admin`
       // scan.activity event (`staffScanOf`), which is all a second, staff-only window ever receives.
       const disconnected = state.sync.status === 'error';
@@ -229,7 +229,7 @@
       const all = $('billAll');
       // Amounts come from the backend whenever it publishes them: it is the ledger, and its figure is
       // the one the check-out endpoint accepts. `amountFor` is only the fallback for the Firestore
-      // path (identical rule, docs/api-contract.md §4.1).
+      // path (identical rule, docs/backend-convention/api-contract.md §4.1).
       const oneAmount = session.amountSatang ?? amountFor(session.checkInMs, now, 1);
       const allAmount = group.amountSatang ?? amountFor(group.startTimeMs, now, (group.memberIds || []).length);
       if (one) one.textContent = baht(oneAmount);

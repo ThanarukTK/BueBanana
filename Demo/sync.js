@@ -6,10 +6,10 @@
  *   NFCSync.dispatch({ type, ... })    // scan | checkout-one | checkout-all | dismiss | reset
  *
  * WHY THIS FILE EXISTS
- * `docs/structure.md` §4 says the database is reachable only through the ElysiaJS backend, and
- * `docs/api-convention.md` §3 gives the browser no database credentials. This module is therefore
+ * `docs/design/structure.md` §4 says the database is reachable only through the ElysiaJS backend, and
+ * `docs/backend-convention/api-convention.md` §3 gives the browser no database credentials. This module is therefore
  * DEMO PLUMBING ONLY: it lets the group-flow demo run on two devices at once so the one-shared-
- * reader flow in `docs/api-contract.md` §3.1 can be demonstrated live. A `rest` backend that calls
+ * reader flow in `docs/backend-convention/api-contract.md` §3.1 can be demonstrated live. A `rest` backend that calls
  * `POST /api/v1/scans`, `POST /api/v1/sessions/:sessionId/check-out` and friends is where this goes
  * in production — the command vocabulary below is deliberately the same as that contract.
  *
@@ -31,7 +31,7 @@
 // Constants
 // ---------------------------------------------------------------------------------------------
 
-/** ฿30 / hour, in satang (integers only — `docs/api-convention.md` §7). */
+/** ฿30 / hour, in satang (integers only — `docs/backend-convention/api-convention.md` §7). */
 export const RATE_PER_HOUR_SATANG = 3000;
 /** Whole-hour billing block. */
 export const HOUR_MS = 3_600_000;
@@ -46,11 +46,11 @@ export const ALL_DAY_SATANG = 15000;
  * invents a price, and this helper stays identical to `backend/src/domain.ts`.
  */
 export const BILLING_NOTE = '฿30/hour whole-hour blocks · ฿150 caps at hour 5 · priced server-side';
-/** How long a join window stays open after a tap (`docs/api-contract.md` §3.1). */
+/** How long a join window stays open after a tap (`docs/backend-convention/api-contract.md` §3.1). */
 export const JOIN_WINDOW_MS = 30000;
 /** Reader display timeout — mirrors the same 30s safety net. */
 export const SCREEN_TIMEOUT_MS = 30000;
-/** `docs/api-contract.md` §2 shapes, stored as document collections. */
+/** `docs/backend-convention/api-contract.md` §2 shapes, stored as document collections. */
 export const COLLECTIONS = {
   groups: 'demoGroups',
   sessions: 'demoSessions',
@@ -136,7 +136,7 @@ export function isDeviceOnline() {
 
 export function emptyState() {
   return {
-    groups: {},      // groupId -> Group   (docs/api-contract.md §2)
+    groups: {},      // groupId -> Group   (docs/backend-convention/api-contract.md §2)
     sessions: {},    // sessionId -> Session
     tags: {},        // tagId -> { sessionId, groupId } — the "who is checked in" index
     counters: {},    // group numbering
@@ -166,7 +166,7 @@ export function scanContextOf(state, now = Date.now()) {
 
 /**
  * What the **staff view** should highlight — `PB-14`, "who is scanning", from the `/ws/admin`
- * `scan.activity` event (`docs/api-contract.md` §4.2).
+ * `scan.activity` event (`docs/backend-convention/api-contract.md` §4.2).
  *
  * This is deliberately separate from `scanContextOf`: the reader's own screen comes from its
  * `POST /api/v1/scans` response, while the staff view is driven by the broadcast event — which is
@@ -785,11 +785,11 @@ async function createFirestoreBackend(setState, setStatus) {
 }
 
 // ---------------------------------------------------------------------------------------------
-// REST + WebSocket backend — talks to the ElysiaJS API (`backend/`, docs/api-contract.md)
+// REST + WebSocket backend — talks to the ElysiaJS API (`backend/`, docs/backend-convention/api-contract.md)
 // ---------------------------------------------------------------------------------------------
 
 /**
- * Development defaults, matching `docs/backend-mvp.md`. `Demo/backend-config.js` (gitignored) can
+ * Development defaults, matching `docs/backend-convention/backend-mvp.md`. `Demo/backend-config.js` (gitignored) can
  * override any of them; with no config file the demo points at the local MVP backend, the same way
  * the Firestore path defaults to its emulator.
  */
@@ -945,7 +945,7 @@ async function createRestBackend(setState, setStatus) {
       sessions,
       tags: {},
       counters: {},
-      // The join window is the backend's, not a local countdown (docs/api-contract.md §3.1).
+      // The join window is the backend's, not a local countdown (docs/backend-convention/api-contract.md §3.1).
       reader: {
         ...state.reader,
         openGroupId: reader.openGroupId || null,
@@ -1164,7 +1164,7 @@ async function createRestBackend(setState, setStatus) {
 
         if (cmd.type === 'checkout-one') {
           const result = await checkout(cmd.groupId, cmd.sessionId);
-          syncReaderSocket();   // a terminal screen closes the reader socket (docs/api-contract.md §3.2)
+          syncReaderSocket();   // a terminal screen closes the reader socket (docs/backend-convention/api-contract.md §3.2)
           return result;
         }
 
@@ -1312,13 +1312,13 @@ export const NFCSync = {
    * Connect to the backend. Safe to call repeatedly — the previous connection is disposed first.
    *
    * Default is the **ElysiaJS backend** (`backend/`, REST + WebSocket) because that is the system of
-   * record: `docs/structure.md` §4 keeps state behind the API and `docs/api-convention.md` §3 gives
+   * record: `docs/design/structure.md` §4 keeps state behind the API and `docs/backend-convention/api-convention.md` §3 gives
    * the browser no database credentials. `Demo/backend-config.js` can select `backend: 'firestore'`
    * to use the earlier Firestore plumbing instead.
    *
    * Either way there is no local/offline mode on purpose: if the backend is unreachable the demo says
    * so and stays empty, rather than running on state that would silently disagree with every other
-   * device (`docs/api-contract.md` §3.1 has a single shared reader, so one stale copy is worse
+   * device (`docs/backend-convention/api-contract.md` §3.1 has a single shared reader, so one stale copy is worse
    * than none).
    */
   async init() {

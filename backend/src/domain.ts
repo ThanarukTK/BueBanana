@@ -142,7 +142,7 @@ export function friendlyGroupName(groupId: string): string {
 }
 
 /**
- * Staff-facing `Group` projection (`docs/api-contract.md` §2).
+ * Staff-facing `Group` projection (`docs/backend-convention/api-contract.md` §2).
  *
  * `sessionId` and `amountSatang` are additive optional fields, which §3.4 explicitly allows inside
  * `/api/v1` (add only, never remove/rename). They exist so a staff client can address one member's

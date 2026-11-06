@@ -1,6 +1,6 @@
 # 🎲 NFC Boardgame Library — Web NFC Demo
 
-**`index.html` is the demo** — the **group-flow demo** from `docs/api-contract.md` §3.1, wired to the
+**`index.html` is the demo** — the **group-flow demo** from `docs/backend-convention/api-contract.md` §3.1, wired to the
 ElysiaJS backend in [`../backend`](../backend) over REST + WebSocket. This is the MVP to present.
 
 It replaced the original **offline** Web NFC pay-per-play timer (plain HTML, `localStorage`, no backend),
@@ -32,7 +32,7 @@ amount and the demo confirms that instead.
 
 There is **no local or offline mode**: if the backend is unreachable the demo says so on the reader
 screen and stays empty, rather than running on state no other device can see. (The single shared reader
-makes one stale copy worse than none — `docs/api-contract.md` §3.1.)
+makes one stale copy worse than none — `docs/backend-convention/api-contract.md` §3.1.)
 
 The page is self-contained: its styles are inline and `sync.js` is its only import, so the folder can be
 dropped on a static host as-is.
@@ -61,7 +61,7 @@ Open `http://localhost:8080`. The demo registers its eight synthetic cards
 staff view. Both talk to the same backend, so the second window shows the scanning player, the rosters
 and the checkout buttons through `/ws/admin` alone — no polling.
 
-With no config file the demo uses the development keys from `docs/backend-mvp.md` and
+With no config file the demo uses the development keys from `docs/backend-convention/backend-mvp.md` and
 `http://localhost:3000`. To point it elsewhere:
 
 ```bash
@@ -71,7 +71,7 @@ cp Demo/backend-config.example.js Demo/backend-config.js    # gitignored
 ### Deploying it
 
 The page is static; the API is not. Deploy the backend first (Render — see
-[`docs/deploy-backend.md`](../docs/deploy-backend.md)), then put that URL in `Demo/backend-config.js`
+[`docs/backend-convention/deploy-backend.md`](../docs/backend-convention/deploy-backend.md)), then put that URL in `Demo/backend-config.js`
 and drag the `Demo/` folder onto a static host (Netlify Drop, GitHub Pages, …), which supplies the HTTPS
 Web NFC needs. Upload `Demo/` and nothing else: the repository root contains `backend/.env`.
 
@@ -85,7 +85,7 @@ across devices without a backend process. Select it with `backend: 'firestore'` 
 `Demo/backend-config.js`.
 
 **No config file → the local emulator.** This keeps everything on your machine, which is what
-`docs/rule.md` (PDPA) asks for in development and testing:
+`docs/compliance/rule.md` (PDPA) asks for in development and testing:
 
 ```bash
 npm install -g firebase-tools        # once
@@ -106,8 +106,8 @@ firebase emulators:start --project demo-nfc-cafe
 ### What the sync layer is — and is not
 
 - `Demo/sync.js` is the **only** place that talks to a backend. `rest` (the default) speaks the
-  documented contract; `firestore` is demo plumbing only — `docs/structure.md` §4 keeps the real
-  database behind the ElysiaJS API, and `docs/api-convention.md` §3 gives the browser no database
+  documented contract; `firestore` is demo plumbing only — `docs/design/structure.md` §4 keeps the real
+  database behind the ElysiaJS API, and `docs/backend-convention/api-convention.md` §3 gives the browser no database
   credentials, so a client writing straight to Firestore cannot satisfy the audit rules in `rule.md`
   (CCA §26).
 - Every state-changing action is audited. In REST mode the **backend** owns the audit log (append-only,

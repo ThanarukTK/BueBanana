@@ -1,7 +1,7 @@
 # Bue Banana Staff Frontend
 
-Next.js staff console for the NFC group check-in/check-out flow in `docs/designdraft.md` and
-`docs/api-contract.md`.
+Next.js staff console for the NFC group check-in/check-out flow in `docs/design/designdraft.md` and
+`docs/backend-convention/api-contract.md`.
 
 ## Run locally
 

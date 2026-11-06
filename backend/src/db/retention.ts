@@ -1,7 +1,7 @@
 /**
  * Audit-log retention job — `bun run retention`.
  *
- * `docs/rule.md` (CCA §26) keeps traffic logs for at least 90 days and requires deletion after that
+ * `docs/compliance/rule.md` (CCA §26) keeps traffic logs for at least 90 days and requires deletion after that
  * unless a lawful hold applies. Retention is a **scheduled job**, never an API route
  * (`api-convention.md` §8.2), so it lives here as a script the demo can run on demand and a real
  * deployment runs on a schedule.

@@ -1,7 +1,7 @@
 # cyd-reader — ESP32-2432S028 + PN532 NFC check-in/check-out reader
 
 Firmware for the NFC boardgame café's hardware reader. Talks to the ElysiaJS
-backend exactly as `docs/api-contract.md` §3 and `docs/api-convention.md` describe.
+backend exactly as `docs/backend-convention/api-contract.md` §3 and `docs/backend-convention/api-convention.md` describe.
 
 ## Hardware
 | Part | Model |
@@ -96,5 +96,5 @@ raw `p.x`/`p.y` during a hold and adjust the two ranges.
 
 ## HTTPS (deploy)
 DEV uses plain HTTP so it can hit your localhost backend. The real deployment is
-HTTPS-only per `docs/rule.md` (PDPA). For a self-signed HTTPS backend add
+HTTPS-only per `docs/compliance/rule.md` (PDPA). For a self-signed HTTPS backend add
 `WiFiClientSecure` + store the server's CA cert (not yet wired in this version).

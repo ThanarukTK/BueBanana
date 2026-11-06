@@ -17,7 +17,7 @@ replaces it without changing a single endpoint, payload or WebSocket message.
 
 ## What does *not* change
 
-- The HTTP contract and the two sockets (`docs/api-contract.md` §3.1/§3.2/§4.1/§4.2) — byte for byte.
+- The HTTP contract and the two sockets (`docs/backend-convention/api-contract.md` §3.1/§3.2/§4.1/§4.2) — byte for byte.
 - `Demo/index.html` and `Demo/sync.js`. The demo cannot tell which store is behind the API.
 - The credential-free path: with `STORE` unset the server still runs `bun test` and `bun run dev:local`
   on the in-memory store with no database and no `.env`.
@@ -82,7 +82,7 @@ change, snake_case columns mapped to camelCase API fields in the store layer.
 > for the threat model this café has, and it caused a hashing defect. `hashTagUid()` now stores a plain
 > `sha256(normalisedUid)`; `TAG_UID_PEPPER` is neither read nor required and a leftover value is
 > ignored. The residual risk (a leaked tag table could be reversed to a card) is accepted and recorded
-> as R11 in `docs/test-plan.docx`. Keep this section as the decision record; re-introduce a keyed
+> as R11 in `docs/testing/test-plan.docx`. Keep this section as the decision record; re-introduce a keyed
 > hash before any customer-linked card data is stored.
 
 `domain.ts` currently stores `sha256(rawUid)`. An NFC UID is low-entropy (a few bytes), so that hash is

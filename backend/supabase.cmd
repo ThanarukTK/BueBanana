@@ -4,7 +4,7 @@ rem  supabase.cmd - one word to run the API against Supabase/PostgreSQL.
 rem
 rem  Applies any pending migrations (backend\migrations\*.sql) and then starts the API with the
 rem  Postgres store. Requires DATABASE_URL in backend\.env - copy backend\.env.example if you have
-rem  not created that file yet. See docs/supabase-migration-plan.md.
+rem  not created that file yet. See docs/backend-convention/supabase-migration-plan.md.
 rem ---------------------------------------------------------------------------------------------
 cd /d "%~dp0"
 set STORE=postgres

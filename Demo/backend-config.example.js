@@ -4,7 +4,7 @@
  *   cp Demo/backend-config.example.js Demo/backend-config.js
  *
  * With no `backend-config.js` the demo uses the same values as `BACKEND_DEFAULTS` in `sync.js`
- * (local backend at http://localhost:3000 with the development keys from `docs/backend-mvp.md`),
+ * (local backend at http://localhost:3000 with the development keys from `docs/backend-convention/backend-mvp.md`),
  * so a fresh checkout runs with zero setup.
  */
 export default {

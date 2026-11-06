@@ -64,10 +64,10 @@ Two things to know when setting this up:
 - **No UID secret to manage any more.** Raw NFC UIDs are stored as a plain SHA-256 of the normalised
   UID; `TAG_UID_PEPPER` was removed as unnecessary and as the cause of a hashing defect, so a leftover
   value in `.env` is ignored. A plain hash of a low-entropy UID is enumerable back to the card if the
-  table leaks — accepted risk, recorded as R11 in `docs/test-plan.docx`; re-introduce a keyed hash
+  table leaks — accepted risk, recorded as R11 in `docs/testing/test-plan.docx`; re-introduce a keyed hash
   before the café stores customer-linked card data.
 
-`docs/supabase-migration-plan.md` has the schema, the integrity guards and the verification results.
+`docs/backend-convention/supabase-migration-plan.md` has the schema, the integrity guards and the verification results.
 
 Two practical notes for the Postgres path:
 
@@ -111,7 +111,7 @@ Use HTTPS at the deployment boundary; this MVP does not provide TLS termination.
   customer-accessible, so on-board registration should be gated behind a staff PIN/role — the device
   key is the shared secret already trusted for `POST /scans`.
 - `POST /api/v1/scans` accepts a device-authenticated raw UID and returns `waiting`, `joined`, `group`,
-  or an error according to `docs/api-contract.md`.
+  or an error according to `docs/backend-convention/api-contract.md`.
 - `POST /api/v1/reader/dismiss` clears the ephemeral join window.
 - `GET /api/v1/reader/state` is the polling fallback for a reader whose WebSocket dropped (§3.2):
   `200` plus a `{ "data": { "screen": ... } }` payload when there is a terminal result to render,
@@ -136,7 +136,7 @@ resolves — nothing polls.
 
 | Channel | Credential | Purpose |
 |---|---|---|
-| `WSS /ws/reader` | `X-Device-Key`, or `?deviceKey=` | `docs/api-contract.md` §3.2 — terminal check-out results only, while the reader shows the `group` screen |
+| `WSS /ws/reader` | `X-Device-Key`, or `?deviceKey=` | `docs/backend-convention/api-contract.md` §3.2 — terminal check-out results only, while the reader shows the `group` screen |
 | `WSS /ws/admin` | `Authorization: Bearer`, or `?token=` | §4.2 — `scan.activity`, `group.updated`, `session.closed` |
 
 Both are **push-only** from the client's side. A reader following the contract opens `/ws/reader` when
@@ -150,7 +150,7 @@ server-side clients.
 
 ## Field additions to the wire contract
 
-`docs/api-contract.md` §3.4 allows **adding optional fields** inside `/api/v1`. The MVP adds three,
+`docs/backend-convention/api-contract.md` §3.4 allows **adding optional fields** inside `/api/v1`. The MVP adds three,
 each because a staff client otherwise has to guess something only the backend knows:
 
 | Addition | Where | Why |
@@ -176,7 +176,7 @@ behind one HTTPS host, where no CORS layer is needed.
 
 `Demo/index.html` (the only demo) runs the documented flow against this backend (REST for commands,
 WebSocket for live updates) — see `Demo/README.md` for how to start both halves, and
-`docs/deploy-backend.md` for hosting them. The swap is a config choice, not a
+`docs/backend-convention/deploy-backend.md` for hosting them. The swap is a config choice, not a
 code change: `Demo/sync.js` has one `rest` backend and the earlier `firestore` plumbing behind the same
 `NFCSync` facade.
 
@@ -190,6 +190,6 @@ double-start / double-charge races that a single process made impossible. Encryp
 by the platform (Supabase); the development store has none, which is one more reason it is
 development-only.
 
-Still required before this is production, per `docs/rule.md`: role-based JWT authorization (replacing the
+Still required before this is production, per `docs/compliance/rule.md`: role-based JWT authorization (replacing the
 shared staff token), encrypted-at-rest guarantees for every field, integrity protection for the log
 (a non-owner database role), and a deployment that terminates TLS.
