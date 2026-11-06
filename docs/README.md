@@ -1,5 +1,4 @@
 # Documentation — BueBanana
-
 Board Game Café Check-In & Check-Out System (NFC reader → ElysiaJS + Supabase → staff console).
 Every document lives in one category folder; nothing sits loose at the root of `docs/` except this
 index.
