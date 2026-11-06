@@ -64,7 +64,7 @@ Two things to know when setting this up:
 - **No UID secret to manage any more.** Raw NFC UIDs are stored as a plain SHA-256 of the normalised
   UID; `TAG_UID_PEPPER` was removed as unnecessary and as the cause of a hashing defect, so a leftover
   value in `.env` is ignored. A plain hash of a low-entropy UID is enumerable back to the card if the
-  table leaks — accepted risk, recorded as R11 in `docs/test-plan-v1.3.docx`; re-introduce a keyed hash
+  table leaks — accepted risk, recorded as R11 in `docs/test-plan.docx`; re-introduce a keyed hash
   before the café stores customer-linked card data.
 
 `docs/supabase-migration-plan.md` has the schema, the integrity guards and the verification results.

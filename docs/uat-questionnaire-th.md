@@ -1,6 +1,6 @@
 # UAT Instruments — Consent, Scenarios, SUS & UTAUT2 (TH/EN)
 
-Companion to `docs/test-plan-v1.3.docx` §4–§5. All instruments are delivered through **one Google Form**
+Companion to `docs/test-plan.docx` §4–§5. All instruments are delivered through **one Google Form**
 (sections A–K); print §5 (scenario cards) and §6 (observer sheet) on paper. Every form and sheet uses
 the participant code `P01…P15` only.
 

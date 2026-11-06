@@ -1,6 +1,6 @@
 # Test artifacts — how to use these files
 
-Companion to `docs/test-plan-v1.3.docx` (UTAUT2). Three spreadsheets plus one printable form.
+Companion to `docs/test-plan.docx` (UTAUT2). Three spreadsheets plus one printable form.
 
 | File | What it is | Who fills it | When |
 |---|---|---|---|
