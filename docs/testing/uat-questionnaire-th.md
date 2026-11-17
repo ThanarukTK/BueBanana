@@ -199,6 +199,19 @@ session starts.
 
 ## 7. Google Form build list (paste-ready)
 
+**Live form:** https://docs.google.com/forms/d/e/1FAIpQLScpEUrULjcvhAJx2wa-Q1jLYvL7r_NM0nSSeXijuZZpZtnydQ/viewform
+— responses export to `docs/form-responses-raw.csv`.
+
+**What the live form actually asks, versus this build list.** The shipped form carries **15 items** — the
+10 usability statements plus five single items (Q11 effort, Q12–Q13 facilitating conditions, Q14 price value,
+Q15 behavioural intention) — and three open questions. The build list below is the intended 38-item
+instrument (SUS 10 + UTAUT2 28). Consequences, recorded rather than glossed over: PE, SI, HM and HT were
+never measured, FC and PV rest on one or two items each, and the 10-item block is a **SUS-adapted** scale
+because Q08–Q10 are performance statements rather than SUS items. See `test/no-real-user-test.md` §2. The
+form's own intro also instructs respondents to type codes `P01–P15`, which is why the export contains
+duplicate and malformed codes (`P01` four times, `P024`, `P014`, `P00`); the log therefore assigns
+`U01…U17` and keeps the entered string in the notes.
+
 **Settings:** one section per construct (§3 C–J); progress bar on; response receipts off; **do not**
 collect email addresses; each question required; linear scale 1–5 with labels
 `ไม่เห็นด้วยอย่างยิ่ง` … `เห็นด้วยอย่างยิ่ง`; anonymous link; response spreadsheet shared only with the

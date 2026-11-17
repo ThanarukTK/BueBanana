@@ -37,7 +37,7 @@ session criterion.
 | S-A | Automated component/API tests | **AUTOMATED** | `backend/src/app.test.ts`; `cd backend && bun test` → `20 pass, 0 fail, 105 expect() calls` (1.0 s) | 20 tests |
 | S-B | Internal end-to-end case run, executed by the team and café staff | **PROXY** (team/staff, not customers) | `docs/test-log/test-cases.csv` — 41 cases, `Result = PASS` on every row; flows F1–F11 traced to PB-01…PB-15 | 41 cases |
 | S-C | Heuristic review of the three interfaces (reader screen, staff console, demo page) against the case set and `docs/compliance/rule.md` | **HEURISTIC** | `docs/testing/test-plan.docx` §11 (compliance checks mapped to TC ids); `docs/design/designdraft.md` §2 (journeys) | 11 obligations |
-| S-D | Questionnaire survey of café customers (consent recorded per response) | **SURVEY** (real respondents, no task observation) | `docs/form-responses-raw.csv` (17 responses) → `docs/test-log/test-session-log.csv` (U01…U17), rebuilt by `docs/test-log/scores.py` | n = 17 |
+| S-D | Questionnaire survey of café customers (consent recorded per response) | **SURVEY** (real respondents, no task observation) | Form: https://docs.google.com/forms/d/e/1FAIpQLScpEUrULjcvhAJx2wa-Q1jLYvL7r_NM0nSSeXijuZZpZtnydQ/viewform → `docs/form-responses-raw.csv` (17 responses) → `docs/test-log/test-session-log.csv` (U01…U17), rebuilt by `docs/test-log/scores.py` | n = 17 |
 
 ### S-D results (the only measured outcome)
 
