@@ -41,6 +41,31 @@ If you only have three or four conversations you can actually recall in detail, 
 so**. Five thin records read worse than four solid ones, and the rubric's substitute path
 (`secondary-review.md`) already covers the problem in general.
 
+## 2a. Copy this and replace only the brackets
+
+Five of these, one per conversation. Everything outside `[...]` is already the right wording; the bracketed
+parts are facts only you know — do not invent a quote to fill one, write `(gist, not verbatim)` instead.
+
+```
+### I01 — [owner / staff / customer]
+
+- **When / where:** ~2026-[10-__], [at the counter / on the floor], [quiet hour / peak hour]
+- **How:** informal conversation, [no notes taken / notes jotted afterwards], reconstructed [the same
+  evening / within the week]. [They knew we were building a check-in system / they did not.]
+- **What we asked:** "[question 1]"; "[question 2]"; "[question 3]"
+- **What we heard:**
+  - [what they said happens now]
+  - [where it costs them time or money]
+  - [what they wish they had]
+- **Verbatim:** "[the Thai words as you remember them]" — "[translation]"
+  *(or: (gist, not verbatim) "..." )*
+- **Maps to:** PB-[__]
+- **Confidence:** [high = said repeatedly and unprompted / medium / low = mentioned once, in passing]
+```
+
+Then in §5, put `I0x` next to the pain it belongs to. That is the whole job — and the synthesis table is what
+makes the file worth reading.
+
 ## 3. Records
 
 ### I01 — `⟨fill: owner / staff / customer⟩`
