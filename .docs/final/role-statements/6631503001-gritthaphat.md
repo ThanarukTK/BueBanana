@@ -21,9 +21,10 @@ document set including the session-log rebuild (`docs/test-log/scores.py`) and t
 
 ## AI disclosure
 
-`⟨fill: which tools, for which parts, and what you personally verified — e.g. "Claude/Codex drafted handlers
-and docs; I reviewed, ran and deployed every change; the pricing rule, the hash function and the audit-log
-behaviour are my decisions, and I re-derived each one against the code before submission."⟩`
+`Use AI for coding and filling repetitive jobs — boilerplate handlers, doc scaffolding, and the
+mechanical parts of the test artefacts. Every change was reviewed and run locally before it was committed;
+the pricing rule, the hash function, the audit-log behaviour and the claim-check results were each
+re-derived against the code, not taken from the assistant's summary.`
 
 ## Statement (≈200 words)
 

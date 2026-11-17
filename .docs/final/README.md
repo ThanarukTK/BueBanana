@@ -70,8 +70,9 @@ row says otherwise.
 
 ## What is still open
 
-1. **Live URL for the app.** The API answers (`https://buebanana.onrender.com/health` → 200) but the staff
-   console and the demo page are not hosted; `case-study.md` keeps `⟨fill⟩` until one is.
+1. **Live URL** — app https://buebanana-wqs1.onrender.com/ (200), API
+   https://buebanana.onrender.com (`/health` 200, `/api/v1/groups` 401 without a token). Reset the demo data
+   before the check: the floor view currently shows sessions opened on 8 and 13 Nov.
 2. **Company charter** and **discovery evidence** (interviews or the SECONDARY review) — the two Discover
    rows above with no file behind them.
 3. **MoSCoW** labelling of the backlog (15 requirements already exist).

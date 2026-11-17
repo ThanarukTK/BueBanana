@@ -48,8 +48,8 @@ CONSTRUCTS = {
 }
 KEEP_PHASE1_NOTES = {
     "manual-baseline (current staff process)": (
-        "⟨fill: 3 stopwatch observations of the counter process - seconds from arrival "
-        "to session recorded, and from payment request to bill handed over⟩"
+        "⟨team ESTIMATE ~180 s for arrival → session recorded at the counter; not a stopwatch observation. "
+        "Replace with 3 timed observations before submission⟩"
     ),
     "S1-S4 internal (staff run)": (
         "internal run by the team; task/timing columns were not recorded in this session"

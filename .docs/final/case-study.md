@@ -2,9 +2,9 @@
 
 Bue Banana (board game café) · team of five · Software Engineering case study, 2026.
 
-**Live system:** API — https://buebanana.onrender.com/health (responds `200`, verified 2026-11-17).
-**Interactive app:** `⟨fill: public URL for the staff console / demo page — nothing is hosted yet; see "Open
-issues" below⟩`.
+**Live system:** app — https://buebanana-wqs1.onrender.com/ (responds `200`, verified 2026-11-17 18:20).
+API — https://buebanana.onrender.com (`/health` → `200`; `/api/v1/groups` → `401` without a staff token,
+so the endpoints are live and authenticated).
 
 ---
 
@@ -74,7 +74,7 @@ UTAUT2 items (`docs/testing/uat-questionnaire-th.md`), and a 17-response survey 
 | Does the system do what the backlog says? | 41/41 cases pass across flows F1–F11 | `docs/test-log/test-cases.csv` |
 | Does the code hold up? | `bun test` → **20 pass, 0 fail, 105 assertions** (1.0 s) | `backend/src/app.test.ts` |
 | Is the money arithmetic right? | All five billing checkpoints match `min(ceil(hours) × ฿30, ฿150)` | automated test + `backend/src/domain.ts` |
-| Is it deployed? | API live on Render, `/health` → 200 | https://buebanana.onrender.com/health |
+| Is it deployed? | App live on Render (200), API live with auth enforced (`/api/v1/groups` → 401) | https://buebanana-wqs1.onrender.com/ · https://buebanana.onrender.com/health |
 | Do customers find it usable? | **72.4** on a 10-item SUS-adapted scale (n=17, SD 8.1, 10/17 at or above the 68 benchmark) | `docs/form-responses-raw.csv`, `docs/test-log/test-session-log.csv` |
 | Has a real customer checked in unaided? | **No.** No observed UAT session ran; the evidence is a survey, not sessions | `test/no-real-user-test.md` |
 | Are the documents still true? | **11/11** claims verified against code and data (was 9/11 before the log rebuild) | `.docs/final/ai/claims-check.log` |
@@ -87,8 +87,11 @@ being quietly dropped, because the honest reading of n=17 is "signal", not "proo
 
 ## 4. Open issues, stated plainly
 
-1. **No public URL for the app.** The API is deployed; the staff console and the demo page are not
-   (`firebase.json` has no `hosting` block). `⟨fill⟩` above stays a blank until one is deployed.
+1. **The deployed app still shows old test sessions.** Opening https://buebanana-wqs1.onrender.com/ on
+   2026-11-17 18:17 listed four open groups, two of them checked in on 8 Nov and 13 Nov — displayed as
+   "221 ชม. 39 นาที" and "96 ชม. 21 นาที", both at the ฿150 cap. The arithmetic is right (the cap holds);
+   the *data* is stale. Run the demo reset (`POST /api/v1/demo/reset`) before the 08:00 check so the floor
+   view opens empty rather than looking like a system that cannot close a session.
 2. **No real-user session data.** Task success, time-on-task and billing accuracy have not been observed
    with a customer. The substitute, its limits and a ready-to-run protocol are in
    `test/no-real-user-test.md`.

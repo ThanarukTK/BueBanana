@@ -50,7 +50,14 @@ Aggregates to compute after collection: mean/SD of `SUS_score_calc`; mean/SD of 
 Cronbach's α per construct; median and range of `checkin_time_s` / `checkout_time_s`;
 `SUM(task_success_1_0)`; `AVERAGE(staff_assists)`; count of `bill_match_1_0 = 0` (must be zero).
 
-## `defect-log.csv` — example row (illustration, not part of the log)
+## `defect-log.csv` — 0 rows, and what that means
+
+The log is header-only. The team reports the internal case run found no defects, so there is nothing to
+write; if a defect is ever found, its row goes here with severity `S1…S4`, the `TC_ID`, the fix commit and
+the retest date. Do not fill the log with example rows to make it look used — an empty log plus the statement
+"none found" is checkable, an invented one is not.
+
+Row shape, for reference only — not part of the log:
 
 ```
 DF-001 | 2026-11-03 | 2 | note-taker | TC-CI-03 | P04 | check-in | S2 | H

@@ -5,7 +5,7 @@ that plainly, records what *was* done instead, says what each substitute does an
 a ready-to-run plan for running the real-user test.
 
 Every number below is reproducible from a file in this repository. Where a measurement was never taken,
-the cell says `⟨fill⟩` — nothing is estimated.
+the cell says `⟨fill⟩`; the only estimated figures are marked **ESTIMATE** and attributed to the team.
 
 ---
 
@@ -21,7 +21,9 @@ the cell says `⟨fill⟩` — nothing is estimated.
   drifted: the responses measure a **10-item SUS-adapted usability scale** plus single items on
   effort expectancy, facilitating conditions, price value and behavioural intention — not validated SUS
   and not UTAUT2.
-- Reason the sessions were not run: `⟨fill: one sentence — e.g. café availability / timing / recruitment shortfall⟩`.
+- Reason the sessions were not run: **the reader's wiring was loose** — taps were unreliable, so an observed
+  session would have measured the cable rather than the system. The hardware fault was found during the
+  internal run, not during a customer session.
 
 **What this means for the plan's exit criteria (§2, Phase 2):** the requirement "≥15 participants completed
 a session; task success ≥90%; billing accuracy 100%" is **not met by this data** — there is no session
@@ -71,16 +73,17 @@ not. It is recorded as a backlog gap, not as a defect the system pretends to hav
 ## 3. Before / after for the MUST tasks
 
 "Before" is the café's current counter process (staff writes the session by hand and totals the bill);
-"After" is the system as tested. Timing for both sides requires stopwatch observation, which has not been
-done — those cells stay `⟨fill⟩` rather than being estimated.
+"After" is the system as tested. The two figures marked **ESTIMATE** are the team's own, not stopwatch
+observations; the remaining cells stay `⟨fill⟩` because nothing was measured. No cell here is a guess dressed
+up as a measurement.
 
 | Requirement | Before (manual counter) | After (system, as tested) | Evidence | Verdict |
 |---|---|---|---|---|
-| PB-01 NFC check-in creates a session | Staff writes name + start time by hand · `⟨fill⟩ s` | Session created on tap, timestamp = server time ±2 s · `⟨fill⟩ s` | TC-CI-01, 04, 06, 08, 11 PASS; automated test "creates a session on a tap" | functional ✅ / timing `⟨fill⟩` |
+| PB-01 NFC check-in creates a session | Staff writes name + start time by hand · **180 s (ESTIMATE)** | Session created on tap, timestamp = server time ±2 s · **30 s (ESTIMATE)** | TC-CI-01, 04, 06, 08, 11 PASS; automated test "creates a session on a tap" | functional ✅ / timing ESTIMATE |
 | PB-02 NFC check-out closes a session | Staff totals on paper · `⟨fill⟩ s` | Check-out with staff confirmation; bill computed server-side | TC-CO-01, 02, 09, 10 PASS | functional ✅ / timing `⟨fill⟩` |
 | PB-03 Timestamps recorded automatically | Written by hand, transcription error possible | Stored server-side, `checkInTime`/`checkOutTime` returned | TC-CI-01, TC-CO-12, TC-X-10 PASS | functional ✅ |
 | PB-04 Staff can see active sessions | Paper sheet at the counter | Floor view lists active groups and members | TC-CI-15, TC-CO-15 PASS | functional ✅ |
-| PB-05 Reliable in busy periods | Queue at the counter | 41 cases in one run, no S1/S2 open | TC-CI-05, TC-X-04, TC-X-05 PASS | functional ✅ / load `⟨fill⟩` |
+| PB-05 Reliable in busy periods | Queue at the counter | 41 cases in one run, no S1/S2 open | TC-CI-05, TC-X-04, TC-X-05 PASS | functional ✅ / **load not measured** |
 | PB-11 Joining an existing group | Staff decides and writes | 30 s join window, roster shown | TC-CI-02, 03, 14 PASS | functional ✅ |
 | PB-12 Individual check-out | Staff recalculates by hand | Per-member close, group stays open | TC-CO-01, 08 PASS | functional ✅ |
 | PB-14 Staff view of the active group/scan | Staff watches the room | Live scanning indicator over WS | TC-CI-15, TC-CO-15 PASS (table identity: plan R8) | functional ✅ |
@@ -88,7 +91,7 @@ done — those cells stay `⟨fill⟩` rather than being estimated.
 **Billing accuracy:** verified against the shipped rule in `backend/src/domain.ts`
 (`min(ceil(hours) × ฿30, ฿150)`) at the plan's five checkpoints (0 min → ฿0.00; 10 s → ฿30.00;
 60 min → ฿30.00; 60 min 1 s → ฿60.00; 240 min 1 s → ฿150.00) by automated test, not by a customer
-receipt. No real-money check has been performed: `⟨fill: 3 receipts, if the team ran them⟩`.
+receipt. Billing accuracy with real money has not been checked — no customer has been charged by this system.
 
 ## 4. What the substitutes do and do not prove
 
@@ -108,6 +111,11 @@ performance statements), so the 72.4 must be described as a **SUS-adapted** scor
 single- or two-item, so no reliability coefficient is meaningful; participant codes were free text
 (`P01` appears four times, plus `P024`, `P014`, `P00`), so the log assigns `U01…U17` and keeps the entered
 code in the notes.
+
+**Defect record.** `docs/test-log/defect-log.csv` holds no rows: the team reports the internal run found no
+defects. That is a report, not a measurement — with 41 cases passing on a first documented run the honest
+reading is "nothing was logged", and the one hardware fault that did occur (the loose reader wiring, §1) was
+resolved in the cable rather than in code, so it has no `TC_ID` and no fix commit.
 
 ## 5. Ready-to-run plan for the real-user test
 
