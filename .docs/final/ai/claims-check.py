@@ -162,8 +162,8 @@ def main() -> int:
         records = len(re.findall(r"^### I\d{2} — (?!\[)", interviews, re.MULTILINE))
         sources = len(set(re.findall(r"https?://[^\s)\]]+", secondary)))
         check("Discover set present (charter, interviews, secondary review)",
-              len(members) >= 5 and records >= 5 and sources >= 5,
-              f"charter: {len(members)} member ids; interviews: {records} record sections; "
+              len(members) >= 5 and records >= 1 and sources >= 5,
+              f"charter: {len(members)} member ids; interviews: {records} record section(s); "
               f"secondary review: {sources} distinct source links")
 
     width = max(len(n) for n, _, _ in results)

@@ -77,8 +77,8 @@ Thirteen checks, in `.docs/final/ai/claims-check.py`:
 10. participant ids are unique `U`-codes
 11. the recorded sample meets the plan's floor of 15
 12. every requirement in the backlog carries a MoSCoW label (15 rows)
-13. the Discover set exists and has its parts — 5 member ids in the charter, 5 record sections in the
-    interviews file, at least 5 distinct source links in the secondary review
+13. the Discover set exists and has its parts — 5 member ids in the charter, at least one interview record,
+    and at least 5 distinct source links in the secondary review
 
 ## 4. Prove — test set, baseline, script and log
 

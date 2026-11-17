@@ -34,9 +34,10 @@ system already solves.
 **Discover.** Company charter with members, roles and team rules (`docs/planning/company-charter.md`);
 proposal with target users and pain traceability (`docs/planning/proposal.md`); product backlog with 15
 requirements `PB-01…PB-15` under MoSCoW — 8 MUST, 6 SHOULD, 1 COULD — each with acceptance criteria
-(`docs/planning/backlog.md`); the three pains traced to evidence: the team's informal conversations with the
-café (`docs/planning/interviews.md`, labelled unstructured) and a SECONDARY review of published research on
-queue cost, self-service check-in and the accessory market (`docs/planning/secondary-review.md`); obligations
+(`docs/planning/backlog.md`); the three pains traced to evidence: one informal conversation with the owner
+(`docs/planning/interviews.md`, 2026-11-11) and — because there were no customer or staff interviews — a
+SECONDARY review of published research on queue cost, self-service check-in and the accessory market
+(`docs/planning/secondary-review.md`); obligations
 from PDPA, the Computer Crime Act §26 and the Electronic Transactions Act §9 mapped to features
 (`docs/compliance/rule.md`).
 

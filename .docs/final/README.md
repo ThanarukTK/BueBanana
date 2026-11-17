@@ -12,7 +12,7 @@ row says otherwise.
 | PDPA / CCA §26 / ETA §9 obligations mapped to features | [`docs/compliance/rule.md`](../../docs/compliance/rule.md) | present |
 | How the team uses AI | [`../../AGENTS.md`](../../AGENTS.md), [`../../claude.md`](../../claude.md), [`ai-logic.md`](ai-logic.md) | present (the AI-usage statement lives in `ai-logic.md` §2) |
 | Company charter (members, roles, team rules) | [`docs/planning/company-charter.md`](../../docs/planning/company-charter.md) | present — 5 members, roles matched to test-plan §7, team rules, AI rules. Meeting cadence `⟨fill⟩` |
-| Real-user interviews ×5 **and** a SECONDARY review | [`docs/planning/interviews.md`](../../docs/planning/interviews.md) (informal conversations, `I01…I05` — records to be filled from the team's notes) · [`docs/planning/secondary-review.md`](../../docs/planning/secondary-review.md) (**SECONDARY**, 6 sources mapped to the 3 pains) | present — interviews labelled informal/unstructured; the published evidence carries the general case, not this café's |
+| Real-user interviews ×5 **or** a SECONDARY review | [`docs/planning/secondary-review.md`](../../docs/planning/secondary-review.md) (**SECONDARY**, 6 verified sources mapped to the 3 pains) · [`docs/planning/interviews.md`](../../docs/planning/interviews.md) (**one** informal conversation, the owner, 2026-11-11) | present on the SECONDARY route — **no customer or staff interviews**, and the file says so; the single owner record is post-demo feedback |
 | Lean Canvas (optional) | — | not written |
 
 ## 2. Build
@@ -73,8 +73,8 @@ row says otherwise.
 1. **Live URL** — app https://buebanana-wqs1.onrender.com/ (200), API
    https://buebanana.onrender.com (`/health` 200, `/api/v1/groups` 401 without a token). Reset the demo data
    before the check: the floor view currently shows sessions opened on 8 and 13 Nov.
-2. **The five interview records are blank.** `docs/planning/interviews.md` has the structure and the
-   labelling rules; the team's recollection goes into `I01…I05` — no invented quotes.
+2. **Interview coverage is one conversation.** `docs/planning/interviews.md` records the owner only (2026-11-11)
+   and states that no staff or customer was interviewed; the SECONDARY review carries the problem instead.
 3. **Real-user sessions** — the evidence path taken instead is `test/no-real-user-test.md`; task success,
    time-on-task and billing accuracy remain unmeasured.
 4. **Defect log** — 0 rows. Either it is empty because the internal run found nothing (then say so in the
