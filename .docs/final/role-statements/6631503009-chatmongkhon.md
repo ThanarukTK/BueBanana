@@ -17,13 +17,6 @@ transcription work that moved survey answers into the log schema.
   `docs/test-log/scores.py`
 - `test/no-real-user-test.md` — the record of what this data does and does not prove
 
-## What this role taught me to check
-
-The first transcription of the form shifted one cell, which scattered Q06–Q10 into the effort/construct
-columns; because the score formula requires all ten items, every score came out blank while the file still
-"looked" full. `⟨fill: one or two sentences in your own words about what that cost and how you now verify a
-transcription⟩`
-
 ## AI disclosure
 
 `⟨fill: which tool, for which part (form design, transcription, analysis wording), and what you checked by
@@ -31,9 +24,21 @@ hand — including who owns the numbers in the session log.⟩`
 
 ## Statement (≈200 words)
 
-`⟨write your own — the survey window and recruitment (who answered, where, over which days), what you would
-change about the instrument (the shipped form asked 15 items; the plan specifies 38), and how you would run
-the observed sessions if the team had another week.⟩`
+I owned the evaluation data: the Google Form our customers answered, the seventeen responses we collected
+from it, and the session-log rows that turn those answers into something that can be scored. I also handled the
+reviewed copies of the test plan going into the repository.
+
+My decision was to stop trusting the participant code people typed. The form's own instructions asked for
+`P01–P15`, so the export arrived with `P01` four times and malformed entries like `P024` and `P00` alongside
+it. Rather than guess which row belonged to which person, the log assigns a unique `U01…U17` and keeps the
+entered string in the notes, so the raw answer is never lost and no two rows can be confused.
+
+What went wrong was my first transcription: one shifted cell pushed questions six to ten into the effort and
+facilitating-conditions columns, and because the score needs all ten items, every score came out blank while
+the file looked complete. It is rebuilt by a script now, with an assertion per row — but I should have written
+that check before the data arrived.
+
+Evidence: `docs/form-responses-raw.csv`, `docs/test-log/test-session-log.csv`, `docs/test-log/scores.py`.
 
 ## Reflection
 

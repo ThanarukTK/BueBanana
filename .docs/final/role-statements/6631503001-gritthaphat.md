@@ -29,10 +29,23 @@ re-derived against the code, not taken from the assistant's summary.`
 
 ## Statement (≈200 words)
 
-`⟨write your own — what you owned, one decision you are proud of and one you got wrong, what you would do
-differently if you rebuilt it. Suggested angles that only you can answer: why the pricing rule moved to
-whole-hour blocks with a ฿150 cap; why the keyed pepper was removed; what it cost to keep docs and code in
-step.⟩`
+I built the backend: the Elysia app and its routes, the two WebSocket channels (reader and staff), both
+stores — in-memory for tests, Supabase Postgres in production — and the rule that turns a session into a bill,
+`min(ceil(hours) × ฿30, ฿150)`. I wrote the API contract and conventions under `docs/backend-convention/`, the
+twenty automated tests that hold that rule in place, the shared context file every assistant in the repo reads,
+and the Web NFC demo page.
+
+My main decision was that money is computed only on the server. The staff console displays the figure it was
+given and posts that figure back; if time has moved the amount in between, the backend refuses it with
+`BILL_AMOUNT_MISMATCH` and answers with the correct number. It cost an extra round trip and a stale-amount
+error path to handle, and it means no one can invent an amount in a browser.
+
+What I would do differently: the script that rebuilds the session log from the survey export should have
+existed before the data arrived, not after. A shifted cell had blanked every score while the file still looked
+full, which is exactly the kind of failure a document cannot show you.
+
+Evidence: `backend/src/app.ts`, `backend/src/domain.ts`, `backend/src/app.test.ts` (20 tests),
+`docs/test-log/scores.py`.
 
 ## Reflection
 
