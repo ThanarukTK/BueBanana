@@ -38,6 +38,7 @@ session criterion.
 | S-B | Internal end-to-end case run, executed by the team and café staff | **PROXY** (team/staff, not customers) | `docs/test-log/test-cases.csv` — 41 cases, `Result = PASS` on every row; flows F1–F11 traced to PB-01…PB-15 | 41 cases |
 | S-C | Heuristic review of the three interfaces (reader screen, staff console, demo page) against the case set and `docs/compliance/rule.md` | **HEURISTIC** | `docs/testing/test-plan.docx` §11 (compliance checks mapped to TC ids); `docs/design/designdraft.md` §2 (journeys) | 11 obligations |
 | S-D | Questionnaire survey of café customers (consent recorded per response) | **SURVEY** (real respondents, no task observation) | Form: https://docs.google.com/forms/d/e/1FAIpQLScpEUrULjcvhAJx2wa-Q1jLYvL7r_NM0nSSeXijuZZpZtnydQ/viewform → `docs/form-responses-raw.csv` (17 responses) → `docs/test-log/test-session-log.csv` (U01…U17), rebuilt by `docs/test-log/scores.py` | n = 17 |
+| S-E | Owner's feedback after the demonstration | **STAKEHOLDER** (the owner, not a customer) | `docs/planning/interviews.md` `I01`; the approval is also recorded in `docs/test-log/test-session-log.csv` row `ST-01` | 1 conversation |
 
 ### S-D results (the only measured outcome)
 
@@ -114,8 +115,16 @@ code in the notes.
 
 **Defect record.** `docs/test-log/defect-log.csv` holds no rows: the team reports the internal run found no
 defects. That is a report, not a measurement — with 41 cases passing on a first documented run the honest
-reading is "nothing was logged", and the one hardware fault that did occur (the loose reader wiring, §1) was
-resolved in the cable rather than in code, so it has no `TC_ID` and no fix commit.
+reading is "nothing was logged".
+
+Two things were reported by someone outside the team and are therefore worth naming:
+
+- **The reader board stops working and has to be reset, and its indicator does not always display properly.**
+  Reported by the owner after the demonstration (`docs/planning/interviews.md` `I01`). The team traced it to
+  the loose reader wiring (§1). It has **no `TC_ID` and no fix commit** because it was fixed in hardware, not
+  code — which is exactly why the defect log cannot show it.
+- **No billing error was reported by anyone.** The owner accepted the demonstrated amounts; the arithmetic
+  is covered at all five boundaries by automated test.
 
 ## 5. Ready-to-run plan for the real-user test
 

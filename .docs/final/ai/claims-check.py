@@ -159,7 +159,7 @@ def main() -> int:
         interviews = discover["interviews.md"].read_text(encoding="utf-8")
         secondary = discover["secondary-review.md"].read_text(encoding="utf-8")
         members = set(re.findall(r"6631503\d{3}", charter))
-        records = len(re.findall(r"^### I\d{2}", interviews, re.MULTILINE))
+        records = len(re.findall(r"^### I\d{2} — (?!\[)", interviews, re.MULTILINE))
         sources = len(set(re.findall(r"https?://[^\s)\]]+", secondary)))
         check("Discover set present (charter, interviews, secondary review)",
               len(members) >= 5 and records >= 5 and sources >= 5,

@@ -1,9 +1,10 @@
 # Discovery conversations — informal interviews
 
-**Status:** the team held **informal, unstructured conversations** with the café (owner, staff, customers)
-during the project. No recording, no formal consent form, no fixed question set, notes reconstructed after the
-fact. This file records them **as what they are** and nothing more — an informal input that shaped the
-backlog, not a research instrument.
+**Status:** the team held **informal, unstructured conversations** with the café (owner, staff, customers),
+all of them **on site at the café**. No recording, no formal consent form, no fixed question set, notes
+reconstructed after the fact. This file records them **as what they are** and nothing more — an informal input
+that shaped the backlog, plus one post-demo feedback conversation with the owner (`I01`) that belongs to
+evaluation rather than discovery.
 
 That labelling is deliberate: a rubric that asks for "real-user interviews" is asking whether real people told
 you something, not whether you ran a lab study. What it does *not* accept is informal chats presented as
@@ -68,22 +69,43 @@ makes the file worth reading.
 
 ## 3. Records
 
-### I01 — `⟨fill: owner / staff / customer⟩`
+### I01 — owner · **post-demo feedback** (evaluation, not discovery)
 
-- **When / where:** `⟨fill: ~date, place⟩`
-- **How:** `⟨fill: informal chat, no notes, reconstructed when?⟩`
-- **What we asked:** `⟨fill⟩`
+- **When / where:** `⟨fill: ~2026-11-__⟩`, at the café, after the system demonstration.
+- **How:** informal conversation at the counter after showing the system running; no notes taken at the time,
+  written up from the team's recollection. The owner knew the system was being built for the café.
+- **What we asked:** "how did the system go?" — whether the flow worked for the shop, and what still needed
+  fixing.
 - **What we heard:**
-  - `⟨fill: pain 1⟩`
-  - `⟨fill: pain 2⟩`
-  - `⟨fill: pain 3⟩`
-- **Verbatim:** `⟨fill: Thai⟩` — `⟨fill: translation⟩`
+  - The system **works and completes the flow in time** — the owner accepted the demonstrated check-in,
+    check-out and group flow. (This is the approval recorded in `docs/test-log/test-session-log.csv`,
+    row `ST-01`.)
+  - **The reader board sometimes stops working and has to be reset** — an intermittent hardware fault, not a
+    flow problem.
+  - **The indicator on the board does not always display properly**, so the state of a tap is not always
+    visible.
+- **Verbatim:** `(gist, not verbatim — English paraphrase of a Thai conversation)` "the system works perfectly
+  and does things in time. But sometimes the board might not work and needs a reset, and the indicator of that
+  sometimes does not show properly."
+- **Maps to:** `PB-05` (reliable during busy periods), `PB-04` / `PB-14` (the staff and reader must show what
+  is happening). It is also the report that matches the loose reader wiring recorded in
+  `test/no-real-user-test.md` §1 and §4.
+- **Confidence:** high — specific, unprompted, and consistent with the fault the team reproduced later. It is
+  the only conversation with the owner on record.
+
+### I02 — `⟨fill: staff / customer⟩`
+
+- **When / where:** at the café, `⟨fill: ~date, hour of day⟩`
+- **How:** `⟨fill: informal conversation, no notes / jotted after, reconstructed when?⟩`
+- **What we asked:** `⟨fill⟩`
+- **What we heard:** `⟨fill⟩`
+- **Verbatim:** `⟨fill: Thai⟩` — `⟨fill: translation⟩`, or `(gist, not verbatim) "..."`.
 - **Maps to:** `⟨fill: PB-xx⟩`
 - **Confidence:** `⟨fill⟩`
 
-### I02 — `⟨fill: role⟩`
+### I03 — `⟨fill: staff / customer⟩`
 
-- **When / where:** `⟨fill⟩`
+- **When / where:** at the café, `⟨fill: ~date, hour of day⟩`
 - **How:** `⟨fill⟩`
 - **What we asked:** `⟨fill⟩`
 - **What we heard:** `⟨fill⟩`
@@ -91,9 +113,9 @@ makes the file worth reading.
 - **Maps to:** `⟨fill⟩`
 - **Confidence:** `⟨fill⟩`
 
-### I03 — `⟨fill: role⟩`
+### I04 — `⟨fill: staff / customer⟩`
 
-- **When / where:** `⟨fill⟩`
+- **When / where:** at the café, `⟨fill: ~date, hour of day⟩`
 - **How:** `⟨fill⟩`
 - **What we asked:** `⟨fill⟩`
 - **What we heard:** `⟨fill⟩`
@@ -101,19 +123,9 @@ makes the file worth reading.
 - **Maps to:** `⟨fill⟩`
 - **Confidence:** `⟨fill⟩`
 
-### I04 — `⟨fill: role⟩`
+### I05 — `⟨fill: staff / customer⟩`
 
-- **When / where:** `⟨fill⟩`
-- **How:** `⟨fill⟩`
-- **What we asked:** `⟨fill⟩`
-- **What we heard:** `⟨fill⟩`
-- **Verbatim:** `⟨fill⟩`
-- **Maps to:** `⟨fill⟩`
-- **Confidence:** `⟨fill⟩`
-
-### I05 — `⟨fill: role⟩`
-
-- **When / where:** `⟨fill⟩`
+- **When / where:** at the café, `⟨fill: ~date, hour of day⟩`
 - **How:** `⟨fill⟩`
 - **What we asked:** `⟨fill⟩`
 - **What we heard:** `⟨fill⟩`
@@ -142,6 +154,11 @@ Fill the "heard in" column from your records; the requirement column is already 
 | Pain 1 — the existing site is inconvenient for customers | `⟨fill: I0x⟩` | `PB-06`, `PB-07` | S4, S5 in `secondary-review.md`; survey theme "steps/guidance unclear" (7/17) |
 | Pain 2 — stakeholders need a better way to promote/sell 3D-printed products | `⟨fill: I0x⟩` | `PB-08`, `PB-09`, `PB-10` | S6 (commercial source, weak) |
 | Pain 3 — check-in/check-out needs staff and causes delays | `⟨fill: I0x⟩` | `PB-01`…`PB-05`, `PB-11`…`PB-15` | S1, S2, S3 in `secondary-review.md` |
+
+`I01` is deliberately not in the column above: the owner's conversation happened **after** the demo and is
+about how the built system behaved, which belongs to evaluation (`test/no-real-user-test.md`) rather than to
+discovery. It is kept in this file because it is the same relationship and the same setting, and because the
+reader fault it names is otherwise unrecorded.
 
 **Heard but not built** — anything a conversation raised that no requirement covers. Put it here instead of
 losing it: `⟨fill⟩`
