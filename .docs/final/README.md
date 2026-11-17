@@ -55,7 +55,7 @@ row says otherwise.
 | Case study — problem, process, outcome (+ live URL) | [`case-study.md`](case-study.md) |
 | AI logic — where, how, prove, measure | [`ai-logic.md`](ai-logic.md) |
 | Comparison table incl. the AI row | [`comparison-table.md`](comparison-table.md) |
-| Role statements (5) | [`role-statements/`](role-statements/) — `6631503001-gritthaphat.md`, `6631503009-chatmongkhon.md`, `6631503021-thanaruk.md`, `6631503032-patcha.md`, `6631503118-supichaya.md` |
+| Role statements (5) | **not committed yet** — each member adds their own file under `.docs/final/role-statements/<studentID>-<name>.md`; the five evidence skeletons are held locally and are pushed once the member has written their own statement. Due with the Reflection (Sun 22 Nov, 23:59) |
 | Reflection per member (due Sun 22 Nov) | the `## Reflection` section at the end of each role statement |
 
 ## 5. Supporting material
