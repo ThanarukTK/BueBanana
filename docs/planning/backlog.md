@@ -10,45 +10,55 @@
 
 ## Backlog
 
-| ID | User Pain | User Story / Requirement | Priority | Acceptance Criteria |
+## MoSCoW priority
+
+Priorities are MoSCoW. **MUST** items are the case-study scope and the only rows the test plan's before/after
+table measures (`must` = cannot ship without it). SHOULD items are in the build and tested but would survive a
+cut. COULD items are designed and partly built. Nothing is marked WON'T — the out-of-scope list in
+`docs/testing/test-plan.docx` §1.3 covers that ground instead.
+
+| Label | Meaning here | Count |
+|---|---|---|
+| **MUST** | The check-in / check-out journey cannot ship without it | 8 (`PB-01`–`PB-05`, `PB-11`, `PB-12`, `PB-14`) |
+| **SHOULD** | Built and tested; a cut would hurt but not break the journey | 6 (`PB-06`, `PB-07`, `PB-08`, `PB-09`, `PB-13`, `PB-15`) |
+| **COULD** | Designed, partly built, first thing dropped if time runs out | 1 (`PB-10`) |
+| WON'T (this release) | Named in the plan's out-of-scope section, not in this table | — |
+
+| ID | User Pain | User Story / Requirement | MoSCoW | Acceptance Criteria |
 |---|---|---|---|---|
-| PB-01 | Pain 3 | As a customer, I want to check in using an NFC tag so that I can enter the café quickly without waiting for staff. | High | The customer can scan an NFC tag and successfully check in. |
-| PB-02 | Pain 3 | As a customer, I want to check out using an NFC tag so that I can complete the process without waiting for staff. | High | The customer can scan the NFC tag and successfully check out. |
-| PB-03 | Pain 3 | As a staff member, I want the system to automatically record customer check-in and check-out times so that I do not need to record them manually. | High | The system automatically stores the customer's check-in and check-out timestamps. |
-| PB-04 | Pain 3 | As a staff member, I want to view the current customer sessions so that I can monitor who is currently using the café. | High | Staff can view active customer sessions and their check-in times. |
-| PB-05 | Pain 3 | As a café owner, I want the NFC system to work reliably during busy periods so that customers are not delayed. | High | The system can process multiple check-in/check-out activities without major errors or unacceptable delays. |
-| PB-06 | Pain 1 | As a customer, I want a simple and easy-to-use interface so that I can access the system without confusion. | Medium | Main functions are clearly displayed and customers can complete common tasks without unnecessary steps. |
-| PB-07 | Pain 1 | As a customer, I want to easily view board game café information so that I can find the information I need quickly. | Medium | Customers can access important café information from the main interface. |
-| PB-08 | Pain 2 | As a stakeholder, I want to display 3D-printed board game products so that customers can discover available products. | Medium | The system can display products with basic information such as name, image, and description. |
-| PB-09 | Pain 2 | As a customer, I want to view details of 3D-printed products so that I can decide whether I am interested in buying them. | Medium | Customers can open and view detailed information for each product. |
-| PB-10 | Pain 2 | As a stakeholder, I want customers to see which 3D-printed products are available so that products can be promoted more effectively. | Low | Available products are clearly shown to customers in the system. |
-| PB-11 | Pain 3 | As a customer, I want to join an existing checked-in group by scanning my NFC tag at the same table so that my friends and I share one session. | High | When a customer scans at a table with an active session, the system adds them to that group instead of creating a separate session. |
-| PB-12 | Pain 3 | As a staff member, I want to check out one member of a group individually so that a customer who is leaving early can pay and go without ending the whole group's session. | High | Staff can select a single customer within a group and check them out; the remaining group members stay checked in. |
-| PB-13 | Pain 3 | As a staff member, I want to check out an entire group at once so that I don't have to close each member's session individually when the whole table leaves together. | Medium | Staff can trigger a single check-out action that ends the session for every member of a group. |
-| PB-14 | Pain 3 | As a staff member, I want the admin web view to show which table is currently being scanned and who is scanning so that I can confirm the right customer/group before charging. | High | The staff web UI highlights the active table and the specific member currently scanning during check-in/check-out. |
-| PB-15 | Pain 3 | As a staff member, I want a backend user-management API so that staff accounts and customer NFC identities can be created, updated, and deactivated. | Medium | Staff can manage NFC identities and staff accounts through the backend API without direct database access. |
+| PB-01 | Pain 3 | As a customer, I want to check in using an NFC tag so that I can enter the café quickly without waiting for staff. | **MUST** | The customer can scan an NFC tag and successfully check in. |
+| PB-02 | Pain 3 | As a customer, I want to check out using an NFC tag so that I can complete the process without waiting for staff. | **MUST** | The customer can scan the NFC tag and successfully check out. |
+| PB-03 | Pain 3 | As a staff member, I want the system to automatically record customer check-in and check-out times so that I do not need to record them manually. | **MUST** | The system automatically stores the customer's check-in and check-out timestamps. |
+| PB-04 | Pain 3 | As a staff member, I want to view the current customer sessions so that I can monitor who is currently using the café. | **MUST** | Staff can view active customer sessions and their check-in times. |
+| PB-05 | Pain 3 | As a café owner, I want the NFC system to work reliably during busy periods so that customers are not delayed. | **MUST** | The system can process multiple check-in/check-out activities without major errors or unacceptable delays. |
+| PB-06 | Pain 1 | As a customer, I want a simple and easy-to-use interface so that I can access the system without confusion. | **SHOULD** | Main functions are clearly displayed and customers can complete common tasks without unnecessary steps. |
+| PB-07 | Pain 1 | As a customer, I want to easily view board game café information so that I can find the information I need quickly. | **SHOULD** | Customers can access important café information from the main interface. |
+| PB-08 | Pain 2 | As a stakeholder, I want to display 3D-printed board game products so that customers can discover available products. | **SHOULD** | The system can display products with basic information such as name, image, and description. |
+| PB-09 | Pain 2 | As a customer, I want to view details of 3D-printed products so that I can decide whether I am interested in buying them. | **SHOULD** | Customers can open and view detailed information for each product. |
+| PB-10 | Pain 2 | As a stakeholder, I want customers to see which 3D-printed products are available so that products can be promoted more effectively. | **COULD** | Available products are clearly shown to customers in the system. |
+| PB-11 | Pain 3 | As a customer, I want to join an existing checked-in group by scanning my NFC tag at the same table so that my friends and I share one session. | **MUST** | When a customer scans at a table with an active session, the system adds them to that group instead of creating a separate session. |
+| PB-12 | Pain 3 | As a staff member, I want to check out one member of a group individually so that a customer who is leaving early can pay and go without ending the whole group's session. | **MUST** | Staff can select a single customer within a group and check them out; the remaining group members stay checked in. |
+| PB-13 | Pain 3 | As a staff member, I want to check out an entire group at once so that I don't have to close each member's session individually when the whole table leaves together. | **SHOULD** | Staff can trigger a single check-out action that ends the session for every member of a group. |
+| PB-14 | Pain 3 | As a staff member, I want the admin web view to show which table is currently being scanned and who is scanning so that I can confirm the right customer/group before charging. | **MUST** | The staff web UI highlights the active table and the specific member currently scanning during check-in/check-out. |
+| PB-15 | Pain 3 | As a staff member, I want a backend user-management API so that staff accounts and customer NFC identities can be created, updated, and deactivated. | **SHOULD** | Staff can manage NFC identities and staff accounts through the backend API without direct database access. |
 
 ---
 
-## Priority Summary
+## Priority summary (MoSCoW)
 
-### High Priority
-- NFC Check-in
-- NFC Check-out
-- Automatic session recording
-- Active session monitoring
-- Reliable operation during busy periods
-- Group check-in (join an existing session)
-- Individual check-out within a group
-- Staff admin view of active table/scanning indicator
+### MUST — the journey
+- `PB-01` NFC check-in · `PB-02` NFC check-out · `PB-03` automatic timestamps
+- `PB-04` active-session monitoring · `PB-05` reliable during busy periods
+- `PB-11` join an existing group · `PB-12` individual check-out within a group
+- `PB-14` staff view of the active group and the current scan
 
-### Medium Priority
-- Improve system usability
-- Group check-out (whole group at once)
-- Backend user-management API
+### SHOULD — around the journey
+- `PB-06` usability / guidance · `PB-07` café information
+- `PB-08` product display · `PB-09` product detail
+- `PB-13` whole-group check-out · `PB-15` staff and NFC-identity management API
 
-### Low Priority
-- Product availability / promotion support
+### COULD — if time allows
+- `PB-10` product availability / promotion support
 
 ---
 

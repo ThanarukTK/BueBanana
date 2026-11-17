@@ -63,7 +63,7 @@ code or the data does:
 claim in docs  ──►  claims-check.py  ──►  PASS / FAIL against code, CSV rows, git blob
 ```
 
-Eleven checks, in `.docs/final/ai/claims-check.py`:
+Thirteen checks, in `.docs/final/ai/claims-check.py`:
 
 1. rate ฿30/hour — code constant vs plan text
 2. cap ฿150 at hour 5 — code constant vs plan text
@@ -76,23 +76,26 @@ Eleven checks, in `.docs/final/ai/claims-check.py`:
 9. the session log yields a numeric score for every participant
 10. participant ids are unique `U`-codes
 11. the recorded sample meets the plan's floor of 15
+12. every requirement in the backlog carries a MoSCoW label (15 rows)
+13. the Discover set exists and has its parts — 5 member ids in the charter, 5 record sections in the
+    interviews file, at least 5 distinct source links in the secondary review
 
 ## 4. Prove — test set, baseline, script and log
 
 | Item | Value |
 |---|---|
-| Test set | 11 machine-checkable claims (`claims-check.py`) |
+| Test set | 13 machine-checkable claims (`claims-check.py`) |
 | Baseline | the committed state at `HEAD` before the rebuild — `--session-log HEAD` |
-| Baseline result | **9/11** (FAIL: session log yields no score; ids not unique) |
-| After | **11/11** |
+| Baseline result | **11/13** (FAIL: session log yields no score; ids not unique) |
+| After | **13/13** |
 | Script | `.docs/final/ai/claims-check.py` |
 | Log | `.docs/final/ai/claims-check.log` (both runs, unedited) |
 
 Reproduce:
 
 ```bash
-python .docs/final/ai/claims-check.py --session-log HEAD   # baseline: 9/11, exit 1
-python .docs/final/ai/claims-check.py                      # current:  11/11, exit 0
+python .docs/final/ai/claims-check.py --session-log 7240df0  # baseline: 11/13, exit 1
+python .docs/final/ai/claims-check.py                      # current:  13/13, exit 0
 ```
 
 The script exits non-zero on any failure, so it can gate a commit. Neither run needs the network, a model,
@@ -102,7 +105,7 @@ or a human reading — which is the point: the check must be cheaper than trusti
 
 | Metric | Baseline | After | What it means |
 |---|---|---|---|
-| Claims verified mechanically | 9 / 11 (82 %) | 11 / 11 (100 %) | AI-written prose shipped two statements that the artefact contradicted |
+| Claims verified mechanically | 11 / 13 (85 %) | 13 / 13 (100 %) | AI-written prose shipped two statements that the artefact contradicted |
 | Stale-claim classes caught | 2 (score-yield, id uniqueness) | 0 | both were "looks complete, isn't" — the characteristic AI-documentation failure |
 | What the check cannot see | any claim about design rationale, UX quality, or a measurement nobody took | same | the check verifies *traceability*, not truth of opinion |
 

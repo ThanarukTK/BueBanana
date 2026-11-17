@@ -25,6 +25,7 @@ import re
 import subprocess
 import sys
 import zipfile
+from collections import Counter
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[3]
@@ -136,6 +137,34 @@ def main() -> int:
     check("survey sample meets the plan's floor (>= 15)",
           len(phase2) >= 15,
           f"{len(phase2)} responses recorded; plan §4.2 requires at least 15")
+
+    # 11. every requirement carries a MoSCoW label
+    rows_pb = re.findall(r"^\|\s*(PB-\d{2})\s*\|.*?\|\s*\**\s*(MUST|SHOULD|COULD|WON'T)\s*\**\s*\|",
+                         backlog, re.MULTILINE)
+    labelled = {rid for rid, _ in rows_pb}
+    check("every requirement carries a MoSCoW label",
+          len(labelled) == 15 and len(rows_pb) == 15,
+          f"{len(rows_pb)} rows labelled, {len(labelled)} distinct PB ids "
+          f"({dict(Counter(l for _, l in rows_pb))})")
+
+    # 12. the Discover set exists and has the parts the rubric names
+    discover = {name: ROOT / "docs" / "planning" / name
+                for name in ("company-charter.md", "interviews.md", "secondary-review.md")}
+    missing = [n for n, p in discover.items() if not p.exists()]
+    if missing:
+        check("Discover set present (charter, interviews, secondary review)", False,
+              f"missing: {missing}")
+    else:
+        charter = discover["company-charter.md"].read_text(encoding="utf-8")
+        interviews = discover["interviews.md"].read_text(encoding="utf-8")
+        secondary = discover["secondary-review.md"].read_text(encoding="utf-8")
+        members = set(re.findall(r"6631503\d{3}", charter))
+        records = len(re.findall(r"^### I\d{2}", interviews, re.MULTILINE))
+        sources = len(set(re.findall(r"https?://[^\s)\]]+", secondary)))
+        check("Discover set present (charter, interviews, secondary review)",
+              len(members) >= 5 and records >= 5 and sources >= 5,
+              f"charter: {len(members)} member ids; interviews: {records} record sections; "
+              f"secondary review: {sources} distinct source links")
 
     width = max(len(n) for n, _, _ in results)
     for name, ok, detail in results:

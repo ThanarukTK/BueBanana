@@ -31,10 +31,14 @@ system already solves.
 
 ## 2. Process
 
-**Discover.** Proposal with target users and pain traceability (`docs/planning/proposal.md`); product
-backlog with 15 requirements `PB-01…PB-15` and acceptance criteria per requirement
-(`docs/planning/backlog.md`); obligations from PDPA, the Computer Crime Act §26 and the Electronic
-Transactions Act §9 mapped to features (`docs/compliance/rule.md`).
+**Discover.** Company charter with members, roles and team rules (`docs/planning/company-charter.md`);
+proposal with target users and pain traceability (`docs/planning/proposal.md`); product backlog with 15
+requirements `PB-01…PB-15` under MoSCoW — 8 MUST, 6 SHOULD, 1 COULD — each with acceptance criteria
+(`docs/planning/backlog.md`); the three pains traced to evidence: the team's informal conversations with the
+café (`docs/planning/interviews.md`, labelled unstructured) and a SECONDARY review of published research on
+queue cost, self-service check-in and the accessory market (`docs/planning/secondary-review.md`); obligations
+from PDPA, the Computer Crime Act §26 and the Electronic Transactions Act §9 mapped to features
+(`docs/compliance/rule.md`).
 
 **Build.** Four parts, one contract:
 
@@ -77,7 +81,7 @@ UTAUT2 items (`docs/testing/uat-questionnaire-th.md`), and a 17-response survey 
 | Is it deployed? | App live on Render (200), API live with auth enforced (`/api/v1/groups` → 401) | https://buebanana-wqs1.onrender.com/ · https://buebanana.onrender.com/health |
 | Do customers find it usable? | **72.4** on a 10-item SUS-adapted scale (n=17, SD 8.1, 10/17 at or above the 68 benchmark) | `docs/form-responses-raw.csv`, `docs/test-log/test-session-log.csv` |
 | Has a real customer checked in unaided? | **No.** No observed UAT session ran; the evidence is a survey, not sessions | `test/no-real-user-test.md` |
-| Are the documents still true? | **11/11** claims verified against code and data (was 9/11 before the log rebuild) | `.docs/final/ai/claims-check.log` |
+| Are the documents still true? | **13/13** claims verified against code and data (11/13 before the log rebuild) | `.docs/final/ai/claims-check.log` |
 
 **What the evaluation actually changed.** The survey's dominant theme was not speed but onboarding: seven
 of seventeen answers asked for clearer steps ("ไม่รู้ขั้นตอน 1 2 3", "มีจุดสแกนเช็คอินเช็คเอ้าท์ชัดเจน").

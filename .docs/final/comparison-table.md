@@ -18,8 +18,8 @@ is presented as a measurement it is not.
 | 10 | Item-level weak points | Unknown | Q02 2.94 (complexity), Q07 3.12 (learning), Q04 3.47 (needs a technical person), Q12 3.76 (knows enough) | Named, not guessed | per-item means | `python docs/test-log/scores.py` output |
 | 11 | UTAUT2 constructs | Not measured | EE 4.24 (1 item), FC 4.12 (2), PV 4.41 (1), BI 4.29 (1); PE/SI/HM/HT not asked | Partial, and labelled partial | construct means | same script; `test/no-real-user-test.md` §2 |
 | 12 | Participant records | 15 placeholder rows, 0 measurements | 17 rows, unique `U01…U17`, complete 10-item block in 17/17 | 0 → 17 scoreable rows | coverage assertion in the rebuild script | `docs/test-log/scores.py` |
-| 13 | Document claims that match the build | 9/11 verified | **11/11 verified** | +2 claims | fixed check set, run against code and data | `.docs/final/ai/claims-check.py`, log in `.docs/final/ai/claims-check.log` |
-| 14 | AI assistance (the AI row) | Docs and code written with no check against the artefact — two claims were stale (session log yield, participant ids) | Same AI-assisted workflow plus a 11-item mechanical claim check in CI-shaped script form, run on every change | Error rate measured: 2/11 → 0/11 | `claims-check.py --session-log HEAD` vs working tree | `.docs/final/ai/claims-check.log` (baseline block vs after block) |
+| 13 | Document claims that match the build | 11/13 verified | **13/13 verified** | +2 claims | fixed check set, run against code and data | `.docs/final/ai/claims-check.py`, log in `.docs/final/ai/claims-check.log` |
+| 14 | AI assistance (the AI row) | Docs and code written with no check against the artefact — two claims were stale (session log yield, participant ids) | Same AI-assisted workflow plus a 13-item mechanical claim check in CI-shaped script form, run on every change | Error rate measured: 2/13 → 0/13 | `claims-check.py --session-log 7240df0` vs working tree | `.docs/final/ai/claims-check.log` (baseline block vs after block) |
 | 15 | Defects recorded | 0 rows in the defect log | 0 rows | none — the team reports the internal run found no defects | row count of `docs/test-log/defect-log.csv` | still header-only; the "none found" statement is recorded in `docs/test-log/test-artifacts-readme.md` and `test/no-real-user-test.md` §4 |
 
 **ESTIMATE** marks the team's own figures, not stopwatch observations: 180 s for the counter process and 30 s
@@ -32,6 +32,6 @@ timed before submission, replace the two cells and drop the word ESTIMATE; until
 ```bash
 cd backend && bun test                                  # 20 pass, 0 fail
 python docs/test-log/scores.py                          # rebuilds the session log, prints the score table
-python .docs/final/ai/claims-check.py                   # 11/11 claims verified
-python .docs/final/ai/claims-check.py --session-log HEAD # the 9/11 baseline, from the committed log
+python .docs/final/ai/claims-check.py                   # 13/13 claims verified
+python .docs/final/ai/claims-check.py --session-log 7240df0 # the 11/13 baseline, from the pre-rebuild log
 ```

@@ -6,8 +6,11 @@ index.
 ```
 docs/
 ├── planning/              what the project promises
+│   ├── company-charter.md     members, roles, team rules, AI rules
+│   ├── interviews.md          the informal discovery conversations (I01…I05) and what they produced
+│   ├── secondary-review.md    SECONDARY evidence for the three pains, with sources
 │   ├── proposal.md            the case-study proposal
-│   └── backlog.md             PB-01…PB-15 — the requirement ids every test case traces to
+│   └── backlog.md             PB-01…PB-15 (MoSCoW) — the ids every test case traces to
 ├── design/                how it is put together
 │   ├── designdraft.md         flows, screens, data model
 │   └── structure.md           repository and module layout
