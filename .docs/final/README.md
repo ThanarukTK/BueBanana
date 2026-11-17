@@ -55,7 +55,7 @@ row says otherwise.
 | Case study — problem, process, outcome (+ live URL) | [`case-study.md`](case-study.md) |
 | AI logic — where, how, prove, measure | [`ai-logic.md`](ai-logic.md) |
 | Comparison table incl. the AI row | [`comparison-table.md`](comparison-table.md) |
-| Role statements (5) | **not committed yet** — each member adds their own file under `.docs/final/role-statements/<studentID>-<name>.md`; the five evidence skeletons are held locally and are pushed once the member has written their own statement. Due with the Reflection (Sun 22 Nov, 23:59) |
+| Role statements (5) | [`role-statements/`](role-statements/) — `6631503001-gritthaphat.md`, `6631503009-chatmongkhon.md`, `6631503021-thanaruk.md`, `6631503032-patcha.md`, `6631503118-supichaya.md`. Ownership evidence and roles are filled for all five; the ≈200-word statement is written by each member (Gritthaphat's AI disclosure is in, the other four write theirs). Reflection appended Sun 22 Nov, 23:59 |
 | Reflection per member (due Sun 22 Nov) | the `## Reflection` section at the end of each role statement |
 
 ## 5. Supporting material
@@ -77,5 +77,8 @@ row says otherwise.
    and states that no staff or customer was interviewed; the SECONDARY review carries the problem instead.
 3. **Real-user sessions** — the evidence path taken instead is `test/no-real-user-test.md`; task success,
    time-on-task and billing accuracy remain unmeasured.
-4. **Defect log** — 0 rows. Either it is empty because the internal run found nothing (then say so in the
+4. **Four role statements still need their own words.** `6631503009`, `6631503021`, `6631503032` and
+   `6631503118` carry the ownership evidence and role, but the `Statement (≈200 words)` and AI-disclosure
+   sections are still marked `⟨write your own⟩` / `⟨fill⟩` — only the member can write those.
+5. **Defect log** — 0 rows. Either it is empty because the internal run found nothing (then say so in the
    file), or defects were found and not written up. Same for the `PASS` column across all 41 cases.
