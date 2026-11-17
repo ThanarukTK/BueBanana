@@ -1,11 +1,14 @@
 # Test artifacts — how to use these files
 
-Companion to `docs/testing/test-plan.docx` (UTAUT2). Three spreadsheets plus one printable form.
+Companion to `docs/testing/test-plan.docx` (UTAUT2). Three spreadsheets, the raw form export they are built
+from, and one printable form.
 
 | File | What it is | Who fills it | When |
 |---|---|---|---|
 | `test-cases.csv` | 41 test cases (15 check-in, 16 check-out, 10 cross-cutting) | Test lead writes; tester sets `Result` | Phase 1; a subset re-run in Phase 2 |
-| `test-session-log.csv` | one row per session — timings, assists, bill match, SUS, UTAUT2 | Note-taker | during/after each session, same day |
+| `test-session-log.csv` | one row per session — timings, assists, bill match, SUS, UTAUT2. **Generated** from the form export by `scores.py`; do not hand-edit the Phase 2 rows | Note-taker fills the observation columns after a real session; `scores.py` fills the survey rows | during/after each session, same day |
+| `../form-responses-raw.csv` | the Google Form export, 17 responses, one row per respondent, exactly as downloaded | nobody edits it | after the last response |
+| `scores.py` | rebuilds `test-session-log.csv` from the export, assigns `U01…U17`, computes the score columns, asserts every row is complete | run it, do not retype its output | after each export |
 | `defect-log.csv` | one row per defect, linked to `TC_ID` | Note-taker → test lead triages | as soon as found |
 | `uat-questionnaire-th.md` | consent, SUS, UTAUT2, scenario cards, Google Form build list | printed | Phase 2 |
 
@@ -30,17 +33,18 @@ the column names.
 
 | Block | Columns | Notes |
 |---|---|---|
-| Identity | `phase`, `participant_id`, `session_date`, `scenario` | rows `BASE-01…03` = manual baseline, `ST-01…03` = Phase 1 staff, `P01…P15` = UAT |
+| Identity | `phase`, `participant_id`, `session_date`, `scenario` | rows `BASE-01…03` = manual baseline, `ST-01…03` = Phase 1 staff, `U01…U17` = survey respondents (`U` codes are assigned by `scores.py`; the code a respondent typed is kept in `notes_verbatim`) |
 | UTAUT2 moderators | `age_band`, `gender`, `experience_first_time_1_0` | copy from the Google Form (Section A) |
 | Observation | `facilitator`, `note_taker`, `task_success_1_0`, `checkin_time_s`, `checkout_time_s`, `staff_assists`, `errors_seen`, `bill_expected_thb`, `bill_shown_thb`, `bill_match_1_0` | stopwatch numbers in seconds; THB with two decimals |
 | SUS | `SUS_01 … SUS_10` | 1–5, as answered |
 | UTAUT2 | `PE1–PE4`, `EE1–EE4`, `SI1–SI3`, `FC1–FC4`, `HM1–HM3`, `PV1–PV3`, `HT1–HT4`, `BI1–BI3` (28 items) | 1–5, as answered |
-| Computed | `SUS_score_calc`, `PE_mean … BI_mean` | live formulas — leave them alone and they update as you type |
+| Computed | `SUS_score_calc`, `PE_mean … BI_mean` | **values, not formulas** — written by `scores.py`. A formula in a `.csv` is inert text, and one missing item silently blanks a live `COUNT`-guarded score, which is how the first transcription produced 0 scores from 17 full rows |
 | Notes | `TC_IDs_touched`, `notes_verbatim` | quotes tagged with the participant code |
 
-Formulas are derived from the header position, so inserting a *whole block* at the end is safe, but
-inserting a column in the middle of the SUS or UTAUT2 block will silently point the formula at the
-wrong cells — if you must insert, rewrite the formula in that column.
+Regenerate the file with `python docs/test-log/scores.py` after each new export instead of editing it by
+hand: the script maps every item by column name, asserts that each row is the right width and that all ten
+items copied correctly, then writes the scores. Hand-transcription is what shifted one cell the first time
+and put Q06–Q10 into the effort/construct columns.
 
 Aggregates to compute after collection: mean/SD of `SUS_score_calc`; mean/SD of each construct mean;
 Cronbach's α per construct; median and range of `checkin_time_s` / `checkout_time_s`;
