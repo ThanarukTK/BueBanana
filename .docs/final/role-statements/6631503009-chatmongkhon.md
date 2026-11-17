@@ -19,8 +19,12 @@ transcription work that moved survey answers into the log schema.
 
 ## AI disclosure
 
-`⟨fill: which tool, for which part (form design, transcription, analysis wording), and what you checked by
-hand — including who owns the numbers in the session log.⟩`
+Codex drafted the first structure of the Google Form, the column set of the session log, and the wording of the
+analysis notes. Everything it produced was checked against the source rather than trusted: the log is rebuilt by
+`docs/test-log/scores.py`, which asserts that every row is the right width and that the ten answers copied from
+the export match the export, and every number in `test/no-real-user-test.md` was counted from the CSV rather
+than copied from the assistant's summary. The instrument itself (SUS and UTAUT2 item wording) came from
+`docs/testing/uat-questionnaire-th.md`, not from the model.
 
 ## Statement (≈200 words)
 
