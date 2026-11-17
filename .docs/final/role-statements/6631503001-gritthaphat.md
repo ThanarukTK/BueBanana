@@ -1,6 +1,7 @@
 # Role statement — Gritthaphat Intaraprasit (6631503001)
 
-**Role:** backend and integration owner; repository conventions; test automation.
+**Role:** backend and integration owner; repository conventions; test automation; **developer / fix owner**
+in the test plan (§7).
 
 ## What I owned
 
