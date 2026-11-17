@@ -81,7 +81,7 @@ up as a measurement.
 | Requirement | Before (manual counter) | After (system, as tested) | Evidence | Verdict |
 |---|---|---|---|---|
 | PB-01 NFC check-in creates a session | Staff writes name + start time by hand · **180 s (ESTIMATE)** | Session created on tap, timestamp = server time ±2 s · **30 s (ESTIMATE)** | TC-CI-01, 04, 06, 08, 11 PASS; automated test "creates a session on a tap" | functional ✅ / timing ESTIMATE |
-| PB-02 NFC check-out closes a session | Staff totals on paper · `⟨fill⟩ s` | Check-out with staff confirmation; bill computed server-side | TC-CO-01, 02, 09, 10 PASS | functional ✅ / timing `⟨fill⟩` |
+| PB-02 NFC check-out closes a session | Staff totals on paper · not measured | Check-out with staff confirmation; bill computed server-side | TC-CO-01, 02, 09, 10 PASS | functional ✅ / timing **not measured** |
 | PB-03 Timestamps recorded automatically | Written by hand, transcription error possible | Stored server-side, `checkInTime`/`checkOutTime` returned | TC-CI-01, TC-CO-12, TC-X-10 PASS | functional ✅ |
 | PB-04 Staff can see active sessions | Paper sheet at the counter | Floor view lists active groups and members | TC-CI-15, TC-CO-15 PASS | functional ✅ |
 | PB-05 Reliable in busy periods | Queue at the counter | 41 cases in one run, no S1/S2 open | TC-CI-05, TC-X-04, TC-X-05 PASS | functional ✅ / **load not measured** |
