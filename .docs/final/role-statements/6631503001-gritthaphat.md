@@ -49,6 +49,26 @@ Evidence: `backend/src/app.ts`, `backend/src/domain.ts`, `backend/src/app.test.t
 
 ## Reflection
 
-`⟨due Sunday 22 Nov, 23:59 — three answers in your own words: (1) how building with AI changed the software
-engineering work, one thing better and one worse, from this project; (2) where you stand in the industry
-today; (3) next year and where you will be in five.⟩`
+### 1. Lessons learned — what AI did to the software engineering
+
+**One thing that got better: the design loop.** The billing rule changed twice late in the project — an entry
+fee was dropped, whole-hour blocks with a ฿150 cap replaced it — and because the rule sits in one function and
+twenty tests assert its boundaries, I could re-derive it and know within a second whether every checkpoint still
+held. Requirements stopped being a document that arrives once. I could ask for a behaviour, see it, and assert
+it in the same sitting, which is the closest I have come to testing driving the design instead of trailing it.
+
+**One thing that got worse: the trustworthiness of the written record.** Prose became cheap to produce, so it
+was produced faster than it was checked. Two documents were confidently wrong while looking complete: a session
+log with seventeen filled rows that yielded no score at all, and participant ids that looked like codes but were
+not unique. Neither is a coding failure; both are failures of the record the project is graded on. The fix was
+mechanical — a script that compares thirteen claims in the documents against the code and the data — and the
+lesson is that anything generated quickly needs a check that is faster than reading it.
+
+
+### 2. Where I stand in the software industry today
+
+`⟨fill: 80-100 words in your own words — see the three angles in the chat, or write your own⟩`
+
+### 3. My plan — next year, and five years out
+
+`⟨fill: 80-100 words in your own words⟩`
