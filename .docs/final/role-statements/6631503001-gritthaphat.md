@@ -49,26 +49,25 @@ Evidence: `backend/src/app.ts`, `backend/src/domain.ts`, `backend/src/app.test.t
 
 ## Reflection
 
-### 1. Lessons learned — what AI did to the software engineering
+**1. Lessons learned.** *One thing that got better: the design loop.* The billing rule changed late — an entry
+fee was dropped and whole-hour blocks with a ฿150 cap replaced it — and because that rule lives in one function
+with twenty tests on its boundaries, I knew within a second whether every checkpoint still held. I could ask for
+a behaviour, see it, and assert it in the same sitting; testing started leading the design instead of trailing
+it. *One thing that got worse: the written record.* Prose became cheap to produce, so it was produced faster
+than it was checked. Two documents looked complete and were wrong — a session log with seventeen filled rows
+that yielded no score, and participant ids that were not unique. Neither is a coding failure; both are failures
+of the record this project is graded on. The fix was mechanical: thirteen claims compared against the code and
+the data on every change.
 
-**One thing that got better: the design loop.** The billing rule changed twice late in the project — an entry
-fee was dropped, whole-hour blocks with a ฿150 cap replaced it — and because the rule sits in one function and
-twenty tests assert its boundaries, I could re-derive it and know within a second whether every checkpoint still
-held. Requirements stopped being a document that arrives once. I could ask for a behaviour, see it, and assert
-it in the same sitting, which is the closest I have come to testing driving the design instead of trailing it.
+**2. Where I stand in the industry today.** The junior role is changing shape faster than the job titles. A year
+ago a junior backend task was writing endpoints; now the endpoint is a prompt away, and what is left is deciding
+what the system must do, reading the diff critically, and proving that it works. This project showed me where
+the value sits: the useful hour was not typing the handler, it was working out that the bill must be computed
+on the server and then writing the test that holds it there. I am employable to the extent that I can specify,
+review and verify — not because I can produce code.
 
-**One thing that got worse: the trustworthiness of the written record.** Prose became cheap to produce, so it
-was produced faster than it was checked. Two documents were confidently wrong while looking complete: a session
-log with seventeen filled rows that yielded no score at all, and participant ids that looked like codes but were
-not unique. Neither is a coding failure; both are failures of the record the project is graded on. The fix was
-mechanical — a script that compares thirteen claims in the documents against the code and the data — and the
-lesson is that anything generated quickly needs a check that is faster than reading it.
-
-
-### 2. Where I stand in the software industry today
-
-`⟨fill: 80-100 words in your own words — see the three angles in the chat, or write your own⟩`
-
-### 3. My plan — next year, and five years out
-
-`⟨fill: 80-100 words in your own words⟩`
+**3. My plan.** Next year I want to finish my degree while taking small paid builds — the kind of work this
+project taught me: a café that needs its counter process instrumented, a shop that wants to sell printed parts
+with a small system behind it. Freelancing would force me to scope, price and deliver alone, which is the part I
+have never done. In five years I want to run a small studio of my own, building systems for small businesses in
+Thailand: a few people, real customers, and code I am still able to read and defend.
